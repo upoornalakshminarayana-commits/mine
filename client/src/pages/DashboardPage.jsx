@@ -1,32 +1,44 @@
 import { motion } from 'framer-motion';
-import WelcomeHero from '../components/WelcomeHero';
-import CompetencyCard from '../components/CompetencyCard';
-import SkillGapCard from '../components/SkillGapCard';
-import AIInsightCard from '../components/AIInsightCard';
-import LearningRecommendation from '../components/LearningRecommendation';
-import IGOTStatus from '../components/IGOTStatus';
-import GrowthChart from '../components/GrowthChart';
-import AssessmentCard from '../components/AssessmentCard';
-import { employee, competencies as defaultCompetencies, skillGaps as defaultGaps, recommendations as defaultRecs, upcomingAssessment, serviceImages } from '../data/mockData';
-import { useStream } from '../context/StreamContext';
 import { Link } from 'react-router-dom';
-import { ChevronRight, TrendingUp, Target, BookOpen, Award, Sparkles, RotateCcw } from 'lucide-react';
+import {
+  Sparkles,
+  TrendingUp,
+  Target,
+  BookOpen,
+  FlaskConical,
+  MessageSquare,
+  Compass,
+  Award,
+  ChevronRight,
+  CheckCircle,
+  ArrowRight,
+  ShieldCheck,
+  RotateCcw,
+  Clock,
+  AlertTriangle
+} from 'lucide-react';
+import { useStream } from '../context/StreamContext';
+import DashboardSummaryCards from '../components/DashboardSummaryCards';
+import NextBestActionCard from '../components/NextBestActionCard';
+import CompetencyRadar from '../components/CompetencyRadar';
+import GrowthChart from '../components/GrowthChart';
+import { serviceImages } from '../data/mockData';
 
 const fadeUp = {
-  initial: { opacity: 0, y: 14 },
+  initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.45 },
+  transition: { duration: 0.35 },
 };
 
 function SectionHeader({ title, subtitle, link, linkLabel }) {
   return (
-    <div className="flex items-start justify-between mb-4">
+    <div className="flex items-start justify-between mb-3.5">
       <div className="section-divider">
         <h2 className="section-title">{title}</h2>
         {subtitle && <p className="section-subtitle">{subtitle}</p>}
       </div>
       {link && (
-        <Link to={link} className="text-xs text-gov-blue hover:text-gov-navy font-medium flex items-center gap-0.5 transition-colors">
+        <Link to={link} className="text-xs text-gov-blue hover:text-gov-navy font-semibold flex items-center gap-0.5 transition-colors">
           {linkLabel || 'View All'} <ChevronRight size={12} />
         </Link>
       )}
@@ -35,232 +47,348 @@ function SectionHeader({ title, subtitle, link, linkLabel }) {
 }
 
 export default function DashboardPage() {
-  let streamCtx = null;
-  try {
-    streamCtx = useStream();
-  } catch {
-    // fallback
-  }
+  const {
+    employee,
+    selectedStream,
+    currentRole,
+    gapAnalysis,
+    virtualLabs,
+    discussions,
+    courses,
+    progressTimeline,
+    setOnboardingStep,
+  } = useStream();
 
-  const selectedStream = streamCtx?.selectedStream;
-  const gapAnalysis = streamCtx?.gapAnalysis;
+  // Dynamic greeting based on time of day
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = employee.name ? employee.name.split(' ')[0] : 'Arjun';
 
-  // Dynamic competencies formatted for CompetencyCard
-  const dynamicCompetencies = gapAnalysis?.competencyBreakdown ? gapAnalysis.competencyBreakdown.map((c, idx) => ({
-    id: `comp-${idx}`,
-    name: c.name,
-    current: c.current,
-    required: c.required,
-    status: c.category === 'strong' ? 'achieved' : c.category === 'critical' ? 'gap' : 'developing',
-    trend: c.gap > 0 ? +4 : +7,
-    lastUpdated: '2026-09-16',
-  })) : defaultCompetencies;
+  const overallScore = gapAnalysis?.overallScore || employee.overallCompetency || 63;
+  const targetLab = virtualLabs[0] || {
+    id: 'lab-stats-01',
+    title: 'District Survey Analysis',
+    badge: 'Core Statistical Scenario',
+    scenario: 'Analyze Varanasi household survey data, resolve missing values, compute CV, and submit findings.',
+  };
 
-  // Dynamic skill gaps
-  const dynamicGaps = gapAnalysis?.criticalGaps && gapAnalysis?.developingGaps ? [
-    ...gapAnalysis.criticalGaps.map((g, idx) => ({
-      id: `gap-crit-${idx}`,
-      skill: g.name,
-      current: g.current,
-      required: g.required,
-      gap: g.gap,
-      severity: 'high',
-      reason: `Mandatory competency for ${streamCtx?.currentRole?.role || 'your role'}. Required to achieve full operational proficiency under standard government guidelines.`,
-      recommendedCourses: 2,
-      estimatedWeeks: 4,
-    })),
-    ...gapAnalysis.developingGaps.map((g, idx) => ({
-      id: `gap-dev-${idx}`,
-      skill: g.name,
-      current: g.current,
-      required: g.required,
-      gap: g.gap,
-      severity: 'medium',
-      reason: `Important developmental competency to enhance speed and precision in departmental deliverables.`,
-      recommendedCourses: 1,
-      estimatedWeeks: 2,
-    })),
-  ] : defaultGaps;
-
-  // Dynamic courses formatted for LearningRecommendation
-  const dynamicCourses = gapAnalysis?.recommendedCourses ? gapAnalysis.recommendedCourses.map((c, idx) => ({
-    id: c.id,
-    title: c.title,
-    provider: c.provider,
-    providerType: c.provider.toLowerCase().includes('igot') ? 'igot' : 'tpac',
-    competency: c.targetGap || c.competency,
-    duration: c.duration,
-    modules: c.modules,
-    level: c.level,
-    priority: c.priority === 'High' ? 'high' : 'medium',
-    enrolled: idx === 0,
-    progress: idx === 0 ? 35 : 0,
-    rating: c.rating,
-    enrolledCount: c.enrolled,
-  })) : defaultRecs;
-
-  const overallScore = gapAnalysis?.overallScore || employee.overallCompetency;
-  const topGapCompetencies = dynamicCompetencies.slice(0, 4);
+  const recommendedCoursesList = courses.filter(c => c.isEnrolled || c.badge.includes('Recommended') || c.badge.includes('Priority')).slice(0, 3);
+  const recentDiscussions = discussions.slice(0, 2);
 
   return (
-    <div className="space-y-8 max-w-screen-xl mx-auto">
-      {/* Stream Active Pill Banner */}
-      {selectedStream && (
-        <div className="bg-gov-blue-light/60 border border-blue-200 rounded-gov-md p-3 px-4 flex items-center justify-between flex-wrap gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{selectedStream.icon}</span>
-            <div>
-              <span className="text-gov-gray-500">Active Stream: </span>
-              <strong className="text-gov-navy">{selectedStream.name}</strong>
-              <span className="text-gov-gray-400 mx-2">·</span>
-              <span className="text-gov-gray-500">Designation: </span>
-              <strong className="text-gov-navy">{streamCtx?.currentRole?.role}</strong>
+    <div className="space-y-7 max-w-screen-2xl mx-auto">
+      
+      {/* ── 1. WELCOME & ROLE GREETING BANNER ───────────────────────────────── */}
+      <motion.div
+        {...fadeUp}
+        className="gov-card p-6 sm:p-7 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white rounded-gov-md shadow-md relative overflow-hidden"
+      >
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="badge-gov-saffron text-[10px] font-bold">
+                {selectedStream?.icon} {selectedStream?.name || 'Statistics & Data Analytics'}
+              </span>
+              <span className="text-white/40">·</span>
+              <span className="text-xs text-white/80 font-semibold">{employee.department}</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              {timeGreeting}, {firstName}
+            </h1>
+
+            {/* Official Designation & Career Path Transition */}
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+              <div className="flex items-center gap-1.5 text-white/90">
+                <span className="text-white/60">Current Role:</span>
+                <strong className="text-white">{employee.designation || 'Statistical Investigator'}</strong>
+              </div>
+
+              <span className="text-white/40 hidden sm:inline">|</span>
+
+              <div className="flex items-center gap-1.5 text-gov-saffron">
+                <span className="text-white/60">Career Path:</span>
+                <strong className="text-gov-saffron flex items-center gap-1">
+                  <span>{employee.designation}</span>
+                  <ArrowRight size={12} />
+                  <span>{employee.targetRole || 'Senior Statistical Officer'}</span>
+                </strong>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => streamCtx?.setOnboardingStep('gap_analysis')}
-              className="text-gov-blue hover:text-gov-navy font-semibold flex items-center gap-1"
-            >
-              <Sparkles size={12} /> View Diagnostic Report
-            </button>
-            <span className="text-gov-gray-300">|</span>
-            <button
-              onClick={() => streamCtx?.setOnboardingStep('stream_selection')}
-              className="text-gov-gray-600 hover:text-gov-navy font-medium flex items-center gap-1"
-            >
-              <RotateCcw size={12} /> Change Stream
-            </button>
+
+          {/* Right Status Badge */}
+          <div className="flex items-center gap-3 bg-white/10 border border-white/20 px-4 py-3 rounded-gov-md backdrop-blur-xs shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gov-green/30 border border-gov-green flex items-center justify-center text-green-300">
+              <CheckCircle size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white leading-none">Assessment Completed</p>
+              <p className="text-[10px] text-white/70 mt-1">iGOT Synced: {employee.igotId}</p>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Quick stats */}
-      <motion.div {...fadeUp} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { icon: Target, label: 'Overall Score', value: `${overallScore}%`, color: 'text-gov-blue', bg: 'bg-gov-blue-light' },
-          { icon: TrendingUp, label: 'Skill Gaps', value: dynamicGaps.length, color: 'text-gov-red', bg: 'bg-gov-red-light' },
-          { icon: BookOpen, label: 'Learning Hours', value: '28 hrs', color: 'text-gov-saffron', bg: 'bg-gov-saffron-light' },
-          { icon: Award, label: 'Certificates', value: 3, color: 'text-gov-green', bg: 'bg-gov-green-light' },
-        ].map(({ icon: Icon, label, value, color, bg }, i) => (
-          <motion.div key={label}
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: i * 0.06 }}
-            className="stat-box"
-          >
-            <div className={`w-8 h-8 rounded-gov ${bg} flex items-center justify-center mb-2`}>
-              <Icon size={16} className={color} />
-            </div>
-            <p className="stat-value text-xl">{value}</p>
-            <p className="stat-label">{label}</p>
-          </motion.div>
-        ))}
       </motion.div>
 
-      {/* Welcome Hero */}
-      <WelcomeHero overallScore={overallScore} />
+      {/* ── 2. DASHBOARD SUMMARY CARDS (Animated Counters) ─────────────────── */}
+      <motion.section {...fadeUp} transition={{ delay: 0.05 }}>
+        <DashboardSummaryCards />
+      </motion.section>
 
-      {/* Main content grid */}
+      {/* ── 3. "YOUR NEXT BEST ACTION" (Large Highlighted Card) ─────────────── */}
+      <motion.section {...fadeUp} transition={{ delay: 0.1 }}>
+        <NextBestActionCard />
+      </motion.section>
+
+      {/* ── 4 & 5. MAIN TWO-COLUMN DASHBOARD GRID ───────────────────────────── */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left column (2/3) */}
-        <div className="lg:col-span-2 space-y-8">
-
-          {/* Competency Overview */}
-          <motion.section {...fadeUp} transition={{ delay: 0.1 }}>
-            <SectionHeader
-              title="My Competency Profile"
-              subtitle="Current level against role requirements"
-              link="/competencies"
-              linkLabel="Full Profile"
-            />
-            <div className="grid sm:grid-cols-2 gap-3">
-              {topGapCompetencies.map((c, i) => (
-                <CompetencyCard key={c.id} competency={c} index={i} />
-              ))}
-            </div>
-          </motion.section>
-
-          {/* Skill Gaps */}
+        
+        {/* Left (2/3 Column) */}
+        <div className="lg:col-span-2 space-y-7">
+          
+          {/* Competency Profile & Radar Breakdown */}
           <motion.section {...fadeUp} transition={{ delay: 0.15 }}>
             <SectionHeader
-              title="Your Identified Skill Gaps"
-              subtitle="Priority areas requiring development for your current role"
+              title="Competency Profile & Benchmark Levels"
+              subtitle="Current proficiency against Senior Statistical Officer role requirements"
               link="/competencies"
-              linkLabel="View All Gaps"
+              linkLabel="Full Radar & Details"
             />
-            <div className="space-y-4">
-              {dynamicGaps.map((gap, i) => (
-                <SkillGapCard key={gap.id} gap={gap} index={i} />
-              ))}
-            </div>
-          </motion.section>
+            
+            <div className="grid sm:grid-cols-2 gap-3.5">
+              {(gapAnalysis?.competencyBreakdown || []).slice(0, 4).map((c, i) => (
+                <div
+                  key={c.name}
+                  className={`gov-card p-4 border-l-4 transition-all ${
+                    c.category === 'critical'
+                      ? 'border-l-gov-red bg-gov-red-light/20'
+                      : c.category === 'strong'
+                      ? 'border-l-gov-green bg-gov-green-light/20'
+                      : 'border-l-gov-amber bg-gov-amber-light/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                        c.category === 'critical' ? 'bg-gov-red text-white' : c.category === 'strong' ? 'bg-gov-green text-white' : 'bg-gov-amber text-white'
+                      }`}>
+                        {c.statusText}
+                      </span>
+                      <h3 className="text-xs font-bold text-gov-navy mt-1">{c.name}</h3>
+                    </div>
+                    <span className="text-base font-black text-gov-navy">{c.current}%</span>
+                  </div>
 
-          {/* AI Insight */}
-          <motion.section {...fadeUp} transition={{ delay: 0.2 }}>
-            <SectionHeader
-              title="AI Competency Insight"
-              subtitle="Personalised analysis of your competency assessment"
-            />
-            <AIInsightCard />
-          </motion.section>
-
-          {/* Learning Recommendations */}
-          <motion.section {...fadeUp} transition={{ delay: 0.22 }}>
-            <SectionHeader
-              title="Recommended for Your Skill Gaps"
-              subtitle="Curated from iGOT Karmayogi and TPAC based on your gaps"
-              link="/learning"
-              linkLabel="All Recommendations"
-            />
-            <div className="space-y-3">
-              {dynamicCourses.slice(0, 3).map((course, i) => (
-                <LearningRecommendation key={course.id} course={course} index={i} />
-              ))}
-            </div>
-          </motion.section>
-
-          {/* Public Service Images */}
-          <motion.section {...fadeUp} transition={{ delay: 0.25 }}>
-            <SectionHeader
-              title="Learning for Better Public Service"
-            />
-            <div className="grid sm:grid-cols-3 gap-3">
-              {serviceImages.map((img, i) => (
-                <div key={i} className="rounded-gov-md overflow-hidden border border-gov-gray-200 shadow-gov-card">
-                  <img
-                    src={img.url}
-                    alt={img.caption}
-                    className="w-full h-28 object-cover"
-                    loading="lazy"
-                  />
-                  <div className="px-3 py-2 bg-gov-off-white border-t border-gov-gray-200">
-                    <p className="text-[10px] text-gov-gray-400 leading-snug">{img.caption}</p>
+                  <div className="space-y-1">
+                    <div className="progress-track h-2">
+                      <div className="h-full rounded-full" style={{ width: `${c.current}%`, backgroundColor: c.color }} />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-gov-gray-500">
+                      <span>Target: {c.required}%</span>
+                      <span>{c.gap > 0 ? <strong className="text-gov-red">-{c.gap}% Gap</strong> : <strong className="text-gov-green">Met ✓</strong>}</span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </motion.section>
+
+          {/* Virtual Lab Recommendation Card */}
+          <motion.section {...fadeUp} transition={{ delay: 0.2 }}>
+            <SectionHeader
+              title="Featured Virtual Lab: Practice Scenario"
+              subtitle="Interactive hands-on simulation linked to your survey sampling gap"
+              link="/virtual-labs"
+              linkLabel="All Virtual Labs"
+            />
+            
+            <div className="gov-card p-5 bg-gradient-to-r from-gov-blue-light/30 via-white to-gov-green-light/20 border-2 border-gov-blue/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="badge-gov-saffron text-[10px] font-bold">{targetLab.badge}</span>
+                  <span className="text-xs text-gov-gray-500 font-mono">Dataset: district_survey.csv</span>
+                </div>
+                <h3 className="text-base font-bold text-gov-navy flex items-center gap-2">
+                  <FlaskConical size={18} className="text-gov-blue" />
+                  <span>{targetLab.title}</span>
+                </h3>
+                <p className="text-xs text-gov-gray-600 leading-relaxed">
+                  {targetLab.scenario}
+                </p>
+                <div className="flex items-center gap-3 text-[11px] text-gov-gray-500 pt-1">
+                  <span>• Missing values detection</span>
+                  <span>• CV estimation</span>
+                  <span>• Anomaly visualization</span>
+                </div>
+              </div>
+
+              <Link
+                to="/virtual-labs"
+                className="btn-gov-primary text-xs px-5 py-2.5 shrink-0 shadow-xs flex items-center gap-1.5"
+              >
+                <FlaskConical size={14} />
+                <span>Launch Workspace</span>
+              </Link>
+            </div>
+          </motion.section>
+
+          {/* Recommended Learning from iGOT / TPAC */}
+          <motion.section {...fadeUp} transition={{ delay: 0.22 }}>
+            <SectionHeader
+              title="Recommended Learning for Your Skill Gaps"
+              subtitle="Curated from iGOT Karmayogi and TPAC based on identified deficits"
+              link="/explore-learning"
+              linkLabel="All Courses"
+            />
+
+            <div className="space-y-3">
+              {recommendedCoursesList.map((course) => (
+                <div
+                  key={course.id}
+                  className="gov-card p-4 hover:shadow-gov-card-hover transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
+                        course.providerType === 'igot' ? 'bg-gov-saffron text-white' : 'bg-gov-blue text-white'
+                      }`}>
+                        {course.provider}
+                      </span>
+                      <span className="badge-gov-neutral text-[9px]">{course.difficulty}</span>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-gov-navy leading-snug">{course.title}</h4>
+                    <p className="text-xs text-gov-gray-600 line-clamp-1">{course.description}</p>
+
+                    <div className="flex items-center gap-3 text-[11px] text-gov-gray-400 pt-1">
+                      <span className="flex items-center gap-1"><Clock size={11} /> {course.duration}</span>
+                      <span>·</span>
+                      <span className="text-gov-navy font-semibold">Target: {course.competency}</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to="/explore-learning"
+                    className="btn-gov-secondary text-xs py-1.5 px-3 shrink-0"
+                  >
+                    <span>{course.isEnrolled ? 'Continue Course' : 'Start Course'}</span>
+                    <ChevronRight size={12} />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Public Service Visuals */}
+          <motion.section {...fadeUp} transition={{ delay: 0.25 }}>
+            <SectionHeader title="Civil Services Excellence in Public Administration" />
+            <div className="grid sm:grid-cols-3 gap-3">
+              {serviceImages.map((img, i) => (
+                <div key={i} className="rounded-gov-md overflow-hidden border border-gov-gray-200 shadow-xs">
+                  <img src={img.url} alt={img.caption} className="w-full h-24 object-cover" loading="lazy" />
+                  <div className="p-2 bg-gov-off-white border-t border-gov-gray-200">
+                    <p className="text-[10px] text-gov-gray-500 leading-tight">{img.caption}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
         </div>
 
-        {/* Right column (1/3) */}
-        <div className="space-y-5">
-          {/* Next Assessment */}
-          <motion.div {...fadeUp} transition={{ delay: 0.12 }}>
-            <SectionHeader title="Skill Assessment" />
-            <AssessmentCard assessment={upcomingAssessment} />
+        {/* Right (1/3 Column) */}
+        <div className="space-y-6">
+          
+          {/* Future Role Readiness Widget */}
+          <motion.div {...fadeUp} transition={{ delay: 0.12 }} className="gov-card p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-gov-gray-200 pb-2">
+              <h3 className="text-xs font-bold text-gov-navy uppercase tracking-wider flex items-center gap-1.5">
+                <Compass size={14} className="text-gov-saffron" />
+                Future Role Transition
+              </h3>
+              <Link to="/future-role" className="text-[11px] text-gov-blue font-semibold hover:underline">
+                View Roadmap
+              </Link>
+            </div>
+
+            <div className="p-3 bg-gov-off-white rounded-gov border border-gov-gray-200 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-gov-gray-500">Target Role:</span>
+                <strong className="text-gov-navy">{employee.targetRole || 'Senior Statistical Officer'}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gov-gray-500">Role Readiness:</span>
+                <strong className="text-gov-saffron font-bold">66% (Near Ready)</strong>
+              </div>
+              <div className="progress-track h-2 mt-1">
+                <div className="h-full rounded-full bg-gov-saffron" style={{ width: '66%' }} />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gov-gray-600 leading-relaxed">
+              Elevating your Survey Sampling score from 42% to 75% satisfies 80% of official promotion benchmark criteria.
+            </p>
           </motion.div>
 
-          {/* iGOT Status */}
-          <motion.div {...fadeUp} transition={{ delay: 0.18 }}>
-            <SectionHeader title="iGOT Connection" />
-            <IGOTStatus />
-          </motion.div>
-
-          {/* Growth Chart */}
-          <motion.div {...fadeUp} transition={{ delay: 0.22 }}>
-            <SectionHeader title="Competency Growth" />
+          {/* Competency Growth Chart */}
+          <motion.div {...fadeUp} transition={{ delay: 0.16 }}>
             <GrowthChart />
           </motion.div>
+
+          {/* Community Discussions Activity */}
+          <motion.div {...fadeUp} transition={{ delay: 0.2 }} className="gov-card p-5 space-y-3">
+            <div className="flex items-center justify-between border-b border-gov-gray-200 pb-2">
+              <h3 className="text-xs font-bold text-gov-navy uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare size={14} className="text-gov-blue" />
+                Active Peer Discussions
+              </h3>
+              <Link to="/discussions" className="text-[11px] text-gov-blue font-semibold hover:underline">
+                Community
+              </Link>
+            </div>
+
+            <div className="space-y-2.5">
+              {recentDiscussions.map(d => (
+                <Link
+                  key={d.id}
+                  to="/discussions"
+                  className="block p-3 bg-gov-off-white hover:bg-gov-blue-light/40 border border-gov-gray-200 rounded-gov transition-colors text-xs space-y-1"
+                >
+                  <p className="font-bold text-gov-navy leading-snug line-clamp-2">{d.title}</p>
+                  <div className="flex items-center justify-between text-[10px] text-gov-gray-400 pt-0.5">
+                    <span>{d.author.name}</span>
+                    <span>{d.repliesCount} replies</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Progress Timeline Preview */}
+          <motion.div {...fadeUp} transition={{ delay: 0.24 }} className="gov-card p-5 space-y-3">
+            <div className="flex items-center justify-between border-b border-gov-gray-200 pb-2">
+              <h3 className="text-xs font-bold text-gov-navy uppercase tracking-wider flex items-center gap-1.5">
+                <Clock size={14} className="text-gov-navy" />
+                Recent Progress Activity
+              </h3>
+              <Link to="/progress" className="text-[11px] text-gov-blue font-semibold hover:underline">
+                Audit Trail
+              </Link>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              {progressTimeline.slice(0, 3).map((item) => (
+                <div key={item.id} className="p-2.5 bg-gov-off-white border border-gov-gray-200 rounded-gov space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-gov-gray-500 font-semibold">{item.date}</span>
+                    <span className="badge-gov-info text-[9px]">{item.badge}</span>
+                  </div>
+                  <p className="font-bold text-gov-navy">{item.title}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
         </div>
       </div>
     </div>
