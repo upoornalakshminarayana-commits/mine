@@ -1,51 +1,56 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, CheckCircle, Info } from 'lucide-react';
+import { ChevronRight, CheckCircle, Info, LayoutDashboard } from 'lucide-react';
 import { STREAMS } from '../data/streamData';
+import { useStream } from '../context/StreamContext';
+import PreDashboardLayout from '../components/layout/PreDashboardLayout';
 
 export default function StreamSelectionPage({ onSelect }) {
+  const { skipToDashboard } = useStream();
   const [selected, setSelected] = useState(null);
 
   const handleContinue = () => {
     if (selected) onSelect(selected);
   };
 
-  return (
-    <div className="min-h-screen bg-gov-off-white flex flex-col">
-      {/* Gov header strip */}
-      <div className="bg-gov-navy">
-        <div className="h-1 bg-gradient-to-r from-gov-saffron via-white to-gov-green" />
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full border border-white/30 bg-white/10 flex items-center justify-center shrink-0">
-            <span className="text-[8px] font-bold text-gov-saffron leading-none">GOVT</span>
-          </div>
-          <div>
-            <p className="text-[10px] text-white/60 uppercase tracking-widest">Government of India · iGOT Karmayogi</p>
-            <p className="text-xs font-semibold text-white">Employee Competency & Learning Portal</p>
-          </div>
-          {/* Step indicator */}
-          <div className="ml-auto flex items-center gap-2">
-            {[
-              { n: 1, label: 'Select Stream', active: true },
-              { n: 2, label: 'Assessment', active: false },
-              { n: 3, label: 'Gap Analysis', active: false },
-              { n: 4, label: 'Dashboard', active: false },
-            ].map(({ n, label, active }) => (
-              <div key={n} className="hidden sm:flex items-center gap-1.5">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border
-                  ${active ? 'bg-gov-saffron text-white border-gov-saffron' : 'bg-white/10 text-white/40 border-white/20'}`}>{n}</div>
-                <span className={`text-[10px] ${active ? 'text-white' : 'text-white/40'} hidden md:inline`}>{label}</span>
-                {n < 4 && <div className="w-6 h-px bg-white/20 mx-1 hidden md:block" />}
-              </div>
-            ))}
-          </div>
+  const streamHeader = (
+    <div className="bg-gov-navy w-full shadow-xs">
+      <div className="h-1 bg-gradient-to-r from-gov-saffron via-white to-gov-green w-full" />
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full border border-white/30 bg-white/10 flex items-center justify-center shrink-0">
+          <span className="text-[8px] font-bold text-gov-saffron leading-none">GOVT</span>
         </div>
-        <div className="h-px bg-white/10" />
+        <div>
+          <p className="text-[10px] text-white/60 uppercase tracking-widest">Government of India · iGOT Karmayogi</p>
+          <p className="text-xs font-semibold text-white">Employee Competency & Learning Portal</p>
+        </div>
+        {/* Step indicator */}
+        <div className="ml-auto flex items-center gap-2">
+          {[
+            { n: 1, label: 'Select Stream', active: true },
+            { n: 2, label: 'Assessment', active: false },
+            { n: 3, label: 'Gap Analysis', active: false },
+            { n: 4, label: 'Dashboard', active: false },
+          ].map(({ n, label, active }) => (
+            <div key={n} className="hidden sm:flex items-center gap-1.5">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border
+                ${active ? 'bg-gov-saffron text-white border-gov-saffron' : 'bg-white/10 text-white/40 border-white/20'}`}>{n}</div>
+              <span className={`text-[10px] ${active ? 'text-white' : 'text-white/40'} hidden md:inline`}>{label}</span>
+              {n < 4 && <div className="w-6 h-px bg-white/20 mx-1 hidden md:block" />}
+            </div>
+          ))}
+        </div>
       </div>
+      <div className="h-px bg-white/10" />
+    </div>
+  );
+
+  return (
+    <PreDashboardLayout header={streamHeader}>
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -108,15 +113,24 @@ export default function StreamSelectionPage({ onSelect }) {
               Your stream selection determines the competency assessment questions and required proficiency levels for your role.
             </div>
 
-            {/* Continue button */}
-            <div className="flex justify-center">
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={handleContinue}
                 disabled={!selected}
-                className="btn-gov-primary px-8 py-3 text-sm disabled:opacity-40"
+                className="btn-gov-primary px-8 py-3 text-sm disabled:opacity-40 w-full sm:w-auto justify-center"
               >
-                Continue to Assessment
+                <span>Continue to Assessment</span>
                 <ChevronRight size={16} />
+              </button>
+
+              <button
+                onClick={() => skipToDashboard(selected || STREAMS[0])}
+                className="btn-gov-secondary px-6 py-3 text-sm w-full sm:w-auto justify-center border border-gov-gray-300"
+                title="Enter Dashboard with benchmark profile"
+              >
+                <LayoutDashboard size={16} className="text-gov-blue" />
+                <span>Explore Full Portal Directly</span>
               </button>
             </div>
 
@@ -132,6 +146,6 @@ export default function StreamSelectionPage({ onSelect }) {
           </motion.div>
         </div>
       </div>
-    </div>
+    </PreDashboardLayout>
   );
 }

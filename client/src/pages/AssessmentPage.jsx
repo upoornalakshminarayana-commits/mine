@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, ClipboardCheck, CheckCircle, Clock, AlertCir
 function AssessmentIntro({ assessment, onStart }) {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="max-w-2xl mx-auto">
+      className="w-full max-w-4xl mx-auto">
       <div className="gov-card overflow-hidden">
         <div className="bg-gov-navy px-6 py-5">
           <div className="flex items-center gap-2 text-gov-saffron text-xs font-semibold uppercase tracking-wide mb-2">
@@ -72,7 +72,7 @@ function AssessmentResult({ answers, questions }) {
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45 }}
-      className="max-w-2xl mx-auto">
+      className="w-full max-w-4xl mx-auto">
       <div className="gov-card overflow-hidden">
         <div className={`px-6 py-8 text-center ${passed ? 'bg-gov-green' : 'bg-gov-saffron'}`}>
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
@@ -155,7 +155,7 @@ export default function AssessmentPage() {
 
   if (stage === 'intro') {
     return (
-      <div className="max-w-screen-xl mx-auto py-4">
+      <div className="w-full py-4">
         <AssessmentIntro assessment={upcomingAssessment} onStart={() => setStage('quiz')} />
       </div>
     );
@@ -164,15 +164,15 @@ export default function AssessmentPage() {
   if (stage === 'result') {
     const answersArr = assessmentQuestions.map((_, i) => answers[i] || null);
     return (
-      <div className="max-w-screen-xl mx-auto py-4">
+      <div className="w-full py-4">
         <AssessmentResult answers={answersArr} questions={assessmentQuestions} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-screen-xl mx-auto py-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="w-full py-4">
+      <div className="max-w-4xl mx-auto">
         {/* Progress header */}
         <div className="gov-card px-5 py-3 mb-4">
           <div className="flex items-center justify-between mb-2">

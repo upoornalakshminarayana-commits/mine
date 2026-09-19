@@ -15,32 +15,33 @@ import {
 } from 'lucide-react';
 import { useStream } from '../context/StreamContext';
 import { certificates } from '../data/mockData';
+import DailyLearningStreakCard from '../components/DailyLearningStreakCard';
 
 export default function ProfilePage() {
   const { employee, selectedStream, currentRole, gapAnalysis } = useStream();
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Header Strip ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-gov-saffron text-white text-xl font-black flex items-center justify-center shadow-md">
-              {employee.avatarInitials || 'AS'}
+              {employee?.avatarInitials || 'AS'}
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white">{employee.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-black text-white">{employee?.name || 'Officer'}</h1>
                 <span className="badge-gov-success text-[10px] font-bold">iGOT Verified</span>
               </div>
-              <p className="text-xs text-white/80">{employee.designation} · {employee.department}</p>
-              <p className="text-[11px] text-white/60 font-mono">Employee ID: {employee.id} · Cadre: {employee.cadre}</p>
+              <p className="text-xs text-white/80">{employee?.designation || 'Statistical Investigator'} · {employee?.department || 'Department'}</p>
+              <p className="text-[11px] text-white/60 font-mono">Employee ID: {employee?.id || 'EMP-01'} · Cadre: {employee?.cadre || 'Indian Statistical Service'}</p>
             </div>
           </div>
 
           <div className="bg-white/10 border border-white/20 px-4 py-3 rounded-gov text-center shrink-0">
             <span className="text-[10px] text-white/60 uppercase font-bold block">Overall Competency</span>
-            <span className="text-3xl font-black text-gov-saffron">{gapAnalysis?.overallScore || employee.overallCompetency}%</span>
+            <span className="text-3xl font-black text-gov-saffron">{gapAnalysis?.overallScore || employee?.overallCompetency || 65}%</span>
             <span className="text-[10px] text-green-300 font-semibold block mt-0.5">Benchmark: 80%</span>
           </div>
         </div>
@@ -59,8 +60,11 @@ export default function ProfilePage() {
 
       {/* ── Employee Details Grid ────────────────────────────────────────────── */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left (2/3): Metadata Breakdown */}
+        {/* Left (2/3): Metadata Breakdown & Daily Learning Streak */}
         <div className="lg:col-span-2 space-y-5">
+          
+          {/* DAILY LEARNING STREAK (Profile Setup Section) */}
+          <DailyLearningStreakCard />
           
           {/* Official Registry Attributes */}
           <div className="gov-card p-5 space-y-4">
@@ -72,42 +76,42 @@ export default function ProfilePage() {
             <div className="grid sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Full Name</span>
-                <p className="font-bold text-gov-navy mt-0.5">{employee.name} ({employee.nameHindi})</p>
+                <p className="font-bold text-gov-navy mt-0.5">{employee?.name || 'Arjun Sharma'} ({employee?.nameHindi || 'अर्जुन शर्मा'})</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Employee ID</span>
-                <p className="font-bold text-gov-navy font-mono mt-0.5">{employee.id}</p>
+                <p className="font-bold text-gov-navy font-mono mt-0.5">{employee?.id || 'EMP-01'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Ministry</span>
-                <p className="font-bold text-gov-navy mt-0.5">{employee.ministry}</p>
+                <p className="font-bold text-gov-navy mt-0.5">{employee?.ministry || 'Ministry of Statistics & Programme Implementation'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Department / Division</span>
-                <p className="font-bold text-gov-navy mt-0.5">{employee.department}</p>
+                <p className="font-bold text-gov-navy mt-0.5">{employee?.department || 'National Statistical Office'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Current Role / Rank</span>
-                <p className="font-bold text-gov-navy mt-0.5">{employee.designation}</p>
+                <p className="font-bold text-gov-navy mt-0.5">{employee?.designation || 'Statistical Investigator'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Selected Stream</span>
-                <p className="font-bold text-gov-blue mt-0.5">{selectedStream?.name}</p>
+                <p className="font-bold text-gov-blue mt-0.5">{selectedStream?.name || 'Statistics & Data Analytics'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">Target Promotion Role</span>
-                <p className="font-bold text-gov-saffron mt-0.5">{employee.targetRole}</p>
+                <p className="font-bold text-gov-saffron mt-0.5">{employee?.targetRole || 'Senior Statistical Officer'}</p>
               </div>
 
               <div>
                 <span className="text-[10px] text-gov-gray-400 uppercase font-bold block">iGOT Synced Account</span>
-                <p className="font-bold text-gov-green font-mono mt-0.5">{employee.igotId}</p>
+                <p className="font-bold text-gov-green font-mono mt-0.5">{employee?.igotId || 'iGOT-2026-ACTIVE'}</p>
               </div>
             </div>
           </div>
@@ -157,11 +161,11 @@ export default function ProfilePage() {
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between p-2 bg-gov-off-white rounded-gov">
                 <span className="text-gov-gray-600">Total Learning Hours</span>
-                <strong className="text-gov-navy">{employee.learningHoursTotal || 34} hrs</strong>
+                <strong className="text-gov-navy">{employee?.learningHoursTotal || 34} hrs</strong>
               </div>
               <div className="flex items-center justify-between p-2 bg-gov-off-white rounded-gov">
                 <span className="text-gov-gray-600">Active Learning Streak</span>
-                <strong className="text-gov-saffron">{employee.learningStreakDays || 14} days</strong>
+                <strong className="text-gov-saffron">{employee?.learningStreakDays || 14} days</strong>
               </div>
               <div className="flex items-center justify-between p-2 bg-gov-off-white rounded-gov">
                 <span className="text-gov-gray-600">Activities Completed</span>

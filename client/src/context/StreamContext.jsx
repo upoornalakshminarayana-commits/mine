@@ -1,17 +1,30 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { STREAMS, STREAM_ROLES, generateGapAnalysis } from '../data/streamData';
+import { STREAMS, STREAM_ROLES } from '../data/streamData';
 import {
-  defaultEmployee,
+  ALL_COURSES_CATALOG,
   VIRTUAL_LABS,
   DISCUSSIONS,
-  LEADERBOARD_USERS,
-  FUTURE_ROLE_DATA,
-  ALL_COURSES_CATALOG,
   DEFAULT_PROGRESS_TIMELINE,
-  DEFAULT_NOTIFICATIONS
+  DEFAULT_NOTIFICATIONS,
 } from '../data/portalData';
+import { ROLE_BLUEPRINTS } from '../data/roleBlueprints';
+import { evaluateEmployeeAssessment } from '../services/roleAssessmentEngine';
+import {
+  getDepartmentConfig,
+  getRoleConfig,
+  getDepartmentCourses,
+  getRecommendedCourses,
+  getNextBestAction,
+  getDepartmentTasks,
+  getDepartmentFutureRoles,
+  getContextualNotifications,
+  getSuggestedQuestions,
+  generateContextualAIReply
+} from '../services/domainConfigEngine';
+import { getVirtualLabById } from '../data/departmentVirtualLabs';
 
 const StreamContext = createContext(null);
+export const EmployeeContext = StreamContext; // Alias for Phase 4 architecture
 
 export function StreamProvider({ children }) {
   // ── 1. Active Stream State ──────────────────────────────────────────────────
@@ -33,25 +46,32 @@ export function StreamProvider({ children }) {
     return localStorage.getItem('ks_onboarding_step') || 'stream_selection'; // stream_selection | assessment | gap_analysis | completed
   });
 
+  const [diagnosticAttemptId, setDiagnosticAttemptId] = useState(() => {
+    return localStorage.getItem('ks_current_attempt_id') || `asmt-init-${Date.now()}`;
+  });
+
   // ── 2. Employee Profile Metadata ────────────────────────────────────────────
   const [employee, setEmployee] = useState(() => {
     const saved = localStorage.getItem('ks_employee_profile');
-    return saved ? JSON.parse(saved) : defaultEmployee;
+    return saved ? JSON.parse(saved) : null;
   });
 
   // ── 3. Dynamic Gap Analysis ─────────────────────────────────────────────────
   const [gapAnalysis, setGapAnalysis] = useState(() => {
-    const streamId = selectedStream?.id || 'stats';
-    return generateGapAnalysis(streamId, assessmentAnswers);
+    const empId = employee?.id || 'demo-employee-01';
+    const savedAnswers = localStorage.getItem('ks_role_answers');
+    const parsedAnswers = savedAnswers ? JSON.parse(savedAnswers) : assessmentAnswers;
+    return evaluateEmployeeAssessment(empId, parsedAnswers);
   });
 
-  // Re-run gap analysis whenever stream or answers change
+  // Re-run gap analysis whenever employee, stream, or answers change
   useEffect(() => {
-    if (selectedStream) {
-      const data = generateGapAnalysis(selectedStream.id, assessmentAnswers);
-      setGapAnalysis(data);
-    }
-  }, [selectedStream, assessmentAnswers]);
+    const empId = employee?.id || 'demo-employee-01';
+    const savedAnswers = localStorage.getItem('ks_role_answers');
+    const parsedAnswers = savedAnswers ? JSON.parse(savedAnswers) : assessmentAnswers;
+    const data = evaluateEmployeeAssessment(empId, parsedAnswers);
+    setGapAnalysis(data);
+  }, [employee, selectedStream, assessmentAnswers]);
 
   // ── 4. Virtual Labs State & Submissions ──────────────────────────────────────
   const [virtualLabs, setVirtualLabs] = useState(() => {
@@ -100,6 +120,83 @@ export function StreamProvider({ children }) {
   ]);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
+  const selectDemoEmployee = (demoEmp) => {
+    const updatedEmployee = {
+      joiningDate: '12 August 2021',
+      igotStatus: 'Connected & Synced',
+      activitiesCompleted: 8,
+      totalActivities: 11,
+      learningStreakDays: 14,
+      learningHoursTotal: 34,
+      id: demoEmp.id,
+      name: demoEmp.name,
+      avatarInitials: demoEmp.avatarInitials,
+      designation: demoEmp.currentRole,
+      targetRole: demoEmp.targetRole,
+      department: demoEmp.department,
+      ministry: demoEmp.ministry,
+      station: demoEmp.station,
+      cadre: demoEmp.cadre,
+      payLevel: demoEmp.payLevel,
+      igotId: demoEmp.igotId,
+      overallCompetency: demoEmp.overallCompetency,
+      competencyGrowth: demoEmp.competencyGrowth,
+      prioritySkillGapsCount: demoEmp.prioritySkillGapsCount,
+      criticalGapsCount: demoEmp.criticalGapsCount,
+      learningProgressPercent: demoEmp.learningProgressPercent,
+      futureRoleReadiness: demoEmp.futureRoleReadiness,
+      competenciesFocus: demoEmp.competencies,
+    };
+
+    setEmployee(updatedEmployee);
+    localStorage.setItem('ks_employee_profile', JSON.stringify(updatedEmployee));
+
+    // Map department to matching professional stream to harmonize dashboard visuals
+    let matchedStream = STREAMS[0];
+    if (demoEmp.department.includes('Agriculture')) {
+      matchedStream = STREAMS.find(s => s.id === 'data_eng') || STREAMS[0];
+    } else if (demoEmp.department.includes('Health')) {
+      matchedStream = STREAMS.find(s => s.id === 'public_policy') || STREAMS[0];
+    } else if (demoEmp.department.includes('Labour')) {
+      matchedStream = STREAMS.find(s => s.id === 'field_ops') || STREAMS[0];
+    } else if (demoEmp.department.includes('Education')) {
+      matchedStream = STREAMS.find(s => s.id === 'public_policy') || STREAMS[0];
+    }
+
+    setSelectedStream(matchedStream);
+    localStorage.setItem('ks_selected_stream', JSON.stringify(matchedStream));
+
+    // Check if this demo employee has completed initial diagnostic (Phase 3 Rule)
+    const isCompleted = localStorage.getItem(`ks_diagnostic_completed_${demoEmp.id}`) === 'true';
+    if (isCompleted) {
+      setAssessmentCompleted(true);
+      localStorage.setItem('ks_assessment_completed', 'true');
+      setOnboardingStep('completed');
+      localStorage.setItem('ks_onboarding_step', 'completed');
+    } else {
+      setAssessmentCompleted(false);
+      localStorage.removeItem('ks_assessment_completed');
+      setOnboardingStep('assessment');
+      localStorage.setItem('ks_onboarding_step', 'assessment');
+    }
+
+    // Set contextual initial welcome message for AI Assistant
+    const empDeptConfig = getDepartmentConfig(demoEmp.id);
+    setAssistantMessages([
+      {
+        id: `msg-init-${Date.now()}`,
+        sender: 'ai',
+        text: `Namaste ${demoEmp.name}. I am your AI Competency Assistant for **${empDeptConfig.name}** (${empDeptConfig.domain}). I am grounded in your role as **${empDeptConfig.roleConfig.title}**. How may I assist your professional development today?`,
+        actions: [
+          { label: 'Why are these courses recommended?', path: '/explore-learning' },
+          { label: 'View Skill Gaps', path: '/skill-gaps' },
+          { label: 'How do I prepare for promotion?', path: '/future-role' },
+        ],
+        timestamp: 'Just now',
+      }
+    ]);
+  };
+
   const selectStream = (stream) => {
     setSelectedStream(stream);
     localStorage.setItem('ks_selected_stream', JSON.stringify(stream));
@@ -107,16 +204,151 @@ export function StreamProvider({ children }) {
     localStorage.setItem('ks_onboarding_step', 'assessment');
   };
 
-  const submitAssessment = (answers) => {
+  const submitAssessment = (answers, isRoleBased = false) => {
     setAssessmentAnswers(answers);
     setAssessmentCompleted(true);
-    localStorage.setItem('ks_stream_answers', JSON.stringify(answers));
+    if (isRoleBased || (employee?.id && ROLE_BLUEPRINTS[employee.id])) {
+      localStorage.setItem('ks_role_answers', JSON.stringify(answers));
+      const evalResult = evaluateEmployeeAssessment(employee.id, answers);
+      setGapAnalysis(evalResult);
+
+      // Persist AssessmentAttempt, EmployeeCompetency, and SkillGap (Step 17)
+      const assessmentAttempt = {
+        employee: {
+          id: employee.id,
+          name: employee.name,
+          department: employee.department,
+          role: employee.designation,
+        },
+        assessment: `diagnostic-${employee.id}`,
+        questionsCount: evalResult.totalQuestions,
+        answers,
+        score: evalResult.overallScore,
+        competencyScores: evalResult.competencyScores,
+        criticalGaps: evalResult.criticalGaps,
+        completedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`ks_assessment_attempt_${employee.id}`, JSON.stringify(assessmentAttempt));
+
+      const employeeCompetency = {
+        employeeId: employee.id,
+        competencyBreakdown: evalResult.competencyBreakdown,
+        overallScore: evalResult.overallScore,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`ks_employee_competency_${employee.id}`, JSON.stringify(employeeCompetency));
+
+      const skillGaps = {
+        employeeId: employee.id,
+        criticalGaps: evalResult.criticalGaps,
+        developingGaps: evalResult.developingGaps,
+        strongAreas: evalResult.strongAreas,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`ks_skill_gaps_${employee.id}`, JSON.stringify(skillGaps));
+
+      localStorage.setItem(`ks_recommendations_${employee.id}`, JSON.stringify(evalResult.recommendedCourses));
+      localStorage.setItem(`ks_learning_path_${employee.id}`, JSON.stringify(evalResult.learningPath));
+
+      // Also update employee overall score & critical gaps count in state
+      const updatedEmp = {
+        ...employee,
+        overallCompetency: evalResult.overallScore,
+        criticalGapsCount: evalResult.criticalGaps.length,
+        prioritySkillGapsCount: evalResult.criticalGaps.length + evalResult.developingGaps.length,
+      };
+      setEmployee(updatedEmp);
+      localStorage.setItem('ks_employee_profile', JSON.stringify(updatedEmp));
+
+      // Preserve historical assessment attempts (Section 9 & 17)
+      try {
+        const historyKey = `ks_diagnostic_history_${employee.id}`;
+        const savedHistory = localStorage.getItem(historyKey);
+        const history = savedHistory ? JSON.parse(savedHistory) : [];
+        const currentAttemptId = localStorage.getItem('ks_current_attempt_id') || `asmt-${employee.id}-${Date.now()}`;
+        
+        let found = false;
+        const updatedHistory = history.map(att => {
+          if (att.attemptId === currentAttemptId) {
+            found = true;
+            return {
+              ...att,
+              status: 'COMPLETED',
+              completedAt: new Date().toISOString(),
+              score: evalResult.overallScore,
+            };
+          }
+          return att;
+        });
+        if (!found) {
+          updatedHistory.push({
+            attemptId: currentAttemptId,
+            employeeId: employee.id,
+            startedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
+            status: 'COMPLETED',
+            score: evalResult.overallScore,
+          });
+        }
+        localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+      } catch (e) {
+        // safe fallback
+      }
+    } else {
+      localStorage.setItem('ks_stream_answers', JSON.stringify(answers));
+    }
     localStorage.setItem('ks_assessment_completed', 'true');
     setOnboardingStep('gap_analysis');
     localStorage.setItem('ks_onboarding_step', 'gap_analysis');
   };
 
+  /**
+   * Initializes a brand new diagnostic assessment attempt for the employee.
+   * Every "Enter Employee" click triggers this to start a fresh quiz attempt.
+   */
+  const startNewDiagnosticAttempt = (employeeId) => {
+    const attemptId = `asmt-${employeeId}-${Date.now()}`;
+    setDiagnosticAttemptId(attemptId);
+    setAssessmentAnswers({});
+    setAssessmentCompleted(false);
+    setOnboardingStep('assessment');
+    localStorage.removeItem('ks_assessment_completed');
+    localStorage.setItem('ks_onboarding_step', 'assessment');
+    localStorage.setItem('ks_current_attempt_id', attemptId);
+
+    // Record this attempt in history
+    try {
+      const historyKey = `ks_diagnostic_history_${employeeId}`;
+      const saved = localStorage.getItem(historyKey);
+      const history = saved ? JSON.parse(saved) : [];
+      history.push({
+        attemptId,
+        employeeId,
+        startedAt: new Date().toISOString(),
+        status: 'IN_PROGRESS',
+      });
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    } catch (e) {
+      // safe fallback
+    }
+  };
+
   const finishOnboarding = () => {
+    if (employee?.id) {
+      localStorage.setItem(`ks_diagnostic_completed_${employee.id}`, 'true');
+    }
+    setAssessmentCompleted(true);
+    localStorage.setItem('ks_assessment_completed', 'true');
+    setOnboardingStep('completed');
+    localStorage.setItem('ks_onboarding_step', 'completed');
+  };
+
+  const skipToDashboard = (stream) => {
+    const s = stream || selectedStream || STREAMS[0];
+    setSelectedStream(s);
+    localStorage.setItem('ks_selected_stream', JSON.stringify(s));
+    setAssessmentCompleted(true);
+    localStorage.setItem('ks_assessment_completed', 'true');
     setOnboardingStep('completed');
     localStorage.setItem('ks_onboarding_step', 'completed');
   };
@@ -130,25 +362,35 @@ export function StreamProvider({ children }) {
     localStorage.setItem('ks_onboarding_step', 'assessment');
   };
 
-  const switchStream = (streamId) => {
+  const switchStream = (streamId, keepInDashboard = true) => {
     const stream = STREAMS.find(s => s.id === streamId) || STREAMS[0];
     setSelectedStream(stream);
-    setAssessmentAnswers({});
-    setAssessmentCompleted(false);
-    setOnboardingStep('assessment');
     localStorage.setItem('ks_selected_stream', JSON.stringify(stream));
-    localStorage.removeItem('ks_stream_answers');
-    localStorage.setItem('ks_assessment_completed', 'false');
-    localStorage.setItem('ks_onboarding_step', 'assessment');
+
+    if (!keepInDashboard) {
+      setAssessmentAnswers({});
+      setAssessmentCompleted(false);
+      setOnboardingStep('assessment');
+      localStorage.removeItem('ks_stream_answers');
+      localStorage.setItem('ks_assessment_completed', 'false');
+      localStorage.setItem('ks_onboarding_step', 'assessment');
+    }
   };
 
   const resetAll = () => {
+    setEmployee(null);
     setSelectedStream(null);
     setAssessmentAnswers({});
     setAssessmentCompleted(false);
     setOnboardingStep('stream_selection');
+    localStorage.removeItem('ks_is_logged_in');
+    localStorage.removeItem('ks_token');
+    localStorage.removeItem('ks_user');
+    localStorage.removeItem('ks_active_portal');
+    localStorage.removeItem('ks_employee_profile');
     localStorage.removeItem('ks_selected_stream');
     localStorage.removeItem('ks_stream_answers');
+    localStorage.removeItem('ks_role_answers');
     localStorage.removeItem('ks_assessment_completed');
     localStorage.removeItem('ks_onboarding_step');
     localStorage.removeItem('ks_lab_submissions');
@@ -166,8 +408,14 @@ export function StreamProvider({ children }) {
     setLabSubmissions(updatedSubmissions);
     localStorage.setItem('ks_lab_submissions', JSON.stringify(updatedSubmissions));
 
+    // Resolve lab details safely
+    const lab = getVirtualLabById(labId) || virtualLabs.find(l => l.id === labId) || {
+      id: labId,
+      title: 'Practical Competency Laboratory',
+      targetCompetency: 'Domain Competency',
+    };
+
     // Add progress timeline entry
-    const lab = virtualLabs.find(l => l.id === labId) || virtualLabs[0];
     const newTimelineItem = {
       id: `evt-lab-${Date.now()}`,
       date: 'Today',
@@ -195,6 +443,26 @@ export function StreamProvider({ children }) {
     const updatedNotifs = [newNotification, ...notifications];
     setNotifications(updatedNotifs);
     localStorage.setItem('ks_notifications', JSON.stringify(updatedNotifs));
+
+    // Close the loop: update employee learning activity count and hours
+    if (employee) {
+      const updatedEmployee = {
+        ...employee,
+        activitiesCompleted: (employee.activitiesCompleted || 8) + 1,
+        learningHoursTotal: (employee.learningHoursTotal || 34) + 1,
+      };
+      setEmployee(updatedEmployee);
+      localStorage.setItem('ks_employee_profile', JSON.stringify(updatedEmployee));
+    }
+
+    // Refresh gap analysis with boosted practical score
+    if (gapAnalysis) {
+      const updatedGaps = {
+        ...gapAnalysis,
+        overallScore: Math.min(96, (gapAnalysis.overallScore || 70) + 1),
+      };
+      setGapAnalysis(updatedGaps);
+    }
   };
 
   // Add Discussion Thread
@@ -210,7 +478,12 @@ export function StreamProvider({ children }) {
       if (d.id === discussionId) {
         const newReply = {
           id: `rep-${Date.now()}`,
-          author: { name: employee.name, role: employee.designation, dept: employee.department, initials: employee.avatarInitials },
+          author: {
+            name: employee?.name || 'Civil Service Officer',
+            role: employee?.designation || 'Statistical Investigator',
+            dept: employee?.department || 'National Statistical Office',
+            initials: employee?.avatarInitials || 'AS',
+          },
           date: 'Just now',
           content: replyText,
           useful: 0,
@@ -251,8 +524,20 @@ export function StreamProvider({ children }) {
     localStorage.setItem('ks_courses', JSON.stringify(updated));
   };
 
-  // AI Assistant Chat Message
-  const sendAIMessage = (userText) => {
+  // ── Phase 4: Centralized Domain Configuration & Contextual Personalization ────
+  const empId = employee?.id || 'demo-employee-01';
+  const departmentConfig = getDepartmentConfig(empId);
+  const roleConfig = departmentConfig.roleConfig;
+  const domainCourses = getDepartmentCourses(empId);
+  const domainRecommendedCourses = getRecommendedCourses(empId, gapAnalysis);
+  const domainNextBestAction = getNextBestAction(empId, gapAnalysis);
+  const domainTasks = getDepartmentTasks(empId);
+  const domainFutureRoles = getDepartmentFutureRoles(empId, gapAnalysis);
+  const domainNotifications = getContextualNotifications(empId);
+  const suggestedAIQuestions = getSuggestedQuestions(empId, gapAnalysis);
+
+  // AI Assistant Chat Message (Strictly Department Grounded)
+  const sendAIMessage = (userText, currentCourse) => {
     const userMsg = {
       id: `usr-${Date.now()}`,
       sender: 'user',
@@ -261,55 +546,23 @@ export function StreamProvider({ children }) {
     };
     setAssistantMessages(prev => [...prev, userMsg]);
 
-    // Generate smart context-aware AI reply
     setTimeout(() => {
-      let botResponse = '';
-      let actions = [];
-
-      const query = userText.toLowerCase();
-
-      if (query.includes('python') || query.includes('skill gap')) {
-        botResponse = `Your latest assessment indicates a 33 percentage point gap in Survey Sampling (42% vs required 75%) and a developing gap in Python for Data Analysis (61% vs required 75%). I recommend starting with "Fundamentals of Survey Sampling" on iGOT and practicing in the District Survey Analysis Virtual Lab.`;
-        actions = [
-          { label: 'Start Learning (iGOT)', path: '/explore-learning' },
-          { label: 'Practice in Virtual Lab', path: '/virtual-labs' },
-          { label: 'View Skill Gaps', path: '/skill-gaps' },
-        ];
-      } else if (query.includes('survey sampling') || query.includes('sampling')) {
-        botResponse = `Survey Sampling is the foundational competency for a ${employee.designation}. Your current score is 42%, while your mapped SSO promotion benchmark requires 75%. You performed well on basic definitions, but practical stratified weight allocation in NSS datasets needs strengthening.`;
-        actions = [
-          { label: 'Launch District Survey Lab', path: '/virtual-labs' },
-          { label: 'Discuss with Peers', path: '/discussions' },
-        ];
-      } else if (query.includes('reassessment') || query.includes('prepare')) {
-        botResponse = `Your Competency Re-Assessment for Survey Sampling requires completing 2 more coursework modules in "Fundamentals of Survey Sampling" and scoring ≥65% in the District Survey Virtual Lab. You are currently 72% ready!`;
-        actions = [
-          { label: 'View Assessments', path: '/assessments' },
-          { label: 'Open Learning Path', path: '/learning-path' },
-        ];
-      } else if (query.includes('competency score') || query.includes('score') || query.includes('how')) {
-        botResponse = `Your overall competency score of 63% is calculated from your Diagnostic Assessment (50%), verified iGOT learning milestones (25%), and Virtual Lab practical submissions (25%). Reassessing closed gaps will boost this to 78%+.`;
-        actions = [
-          { label: 'View Competency Radar', path: '/competencies' },
-          { label: 'Check Leaderboard Rank', path: '/leaderboard' },
-        ];
-      } else {
-        botResponse = `I have logged your request regarding "${userText}". Based on your active Statistics & Data Analytics stream, I suggest focusing on closing your critical Survey Sampling gap through our interactive Virtual Labs and taking the upcoming re-assessment.`;
-        actions = [
-          { label: 'Explore Learning', path: '/explore-learning' },
-          { label: 'Virtual Labs', path: '/virtual-labs' },
-        ];
-      }
+      const { text, actions } = generateContextualAIReply(
+        userText,
+        employee || { name: 'Officer', designation: roleConfig.title, id: empId },
+        gapAnalysis,
+        currentCourse
+      );
 
       const botMsg = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: botResponse,
+        text,
         actions,
         timestamp: 'Just now',
       };
       setAssistantMessages(prev => [...prev, botMsg]);
-    }, 600);
+    }, 400);
   };
 
   const currentRole = STREAM_ROLES[selectedStream?.id || 'stats'] || STREAM_ROLES.stats;
@@ -324,6 +577,15 @@ export function StreamProvider({ children }) {
       currentRole,
       employee,
       setEmployee,
+      departmentConfig,
+      roleConfig,
+      domainCourses,
+      domainRecommendedCourses,
+      domainNextBestAction,
+      domainTasks,
+      domainFutureRoles,
+      domainNotifications,
+      suggestedAIQuestions,
       virtualLabs,
       labSubmissions,
       submitVirtualLabAnalysis,
@@ -331,22 +593,26 @@ export function StreamProvider({ children }) {
       addDiscussion,
       addDiscussionReply,
       upvoteDiscussion,
-      courses,
+      courses: domainCourses.length > 0 ? domainCourses : courses,
       toggleCourseEnrollment,
       progressTimeline,
-      notifications,
+      notifications: domainNotifications.length > 0 ? domainNotifications : notifications,
       setNotifications,
       isAIAssistantOpen,
       setIsAIAssistantOpen,
       assistantMessages,
       sendAIMessage,
+      selectDemoEmployee,
       selectStream,
       submitAssessment,
       finishOnboarding,
       retakeAssessment,
       switchStream,
       resetAll,
+      skipToDashboard,
       setOnboardingStep,
+      diagnosticAttemptId,
+      startNewDiagnosticAttempt,
     }}>
       {children}
     </StreamContext.Provider>
@@ -358,3 +624,5 @@ export const useStream = () => {
   if (!ctx) throw new Error('useStream must be used within StreamProvider');
   return ctx;
 };
+
+export const useEmployee = useStream;

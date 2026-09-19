@@ -5,7 +5,7 @@ import { Award, Download, ExternalLink, Shield } from 'lucide-react';
 
 export default function CertificatesPage() {
   return (
-    <div className="max-w-screen-xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>

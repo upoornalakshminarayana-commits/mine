@@ -23,10 +23,11 @@ export default function CompetenciesPage() {
   }
 
   const selectedStream = streamCtx?.selectedStream;
+  const departmentConfig = streamCtx?.departmentConfig;
   const gapAnalysis = streamCtx?.gapAnalysis;
   const roleInfo = streamCtx?.currentRole || {
-    role: employee.role,
-    department: employee.department,
+    role: streamCtx?.employee?.designation || employee.role,
+    department: streamCtx?.employee?.department || employee.department,
   };
 
   // Dynamic competencies formatted for CompetencyCard
@@ -69,23 +70,23 @@ export default function CompetenciesPage() {
   const counts = STATUS_COUNTS(dynamicCompetencies);
 
   return (
-    <div className="max-w-screen-xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* Page header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="badge-gov-saffron text-xs">
-                {selectedStream?.name || 'Statistics & Data Analytics'}
+                {departmentConfig?.icon || '🏛️'} {departmentConfig?.name || selectedStream?.name} · {departmentConfig?.competenciesContext || 'Official Blueprint'}
               </span>
             </div>
             <h1 className="text-xl font-bold text-gov-navy">My Competency Profile</h1>
             <p className="text-sm text-gov-gray-400 mt-1">
-              Understand your current competency level against the requirements of your role.
+              Understand your current competency level across {departmentConfig?.competenciesContext || 'role competencies'} against the requirements of your role.
             </p>
             <p className="text-xs text-gov-gray-400 mt-0.5">
               Role: <strong className="text-gov-navy">{roleInfo.role}</strong> ·
-              Last assessed: <strong className="text-gov-navy">2026-09-16</strong>
+              Department: <strong className="text-gov-navy">{roleInfo.department}</strong>
             </p>
           </div>
           <div className="flex gap-2">

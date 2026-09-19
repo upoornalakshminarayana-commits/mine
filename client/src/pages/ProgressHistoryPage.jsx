@@ -24,7 +24,7 @@ export default function ProgressHistoryPage() {
     : progressTimeline.filter(e => e.category.toLowerCase() === filterCategory.toLowerCase());
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

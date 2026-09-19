@@ -61,10 +61,10 @@ export default function DiscussionsPage() {
       streamId: selectedStream?.id || 'stats',
       title: newTitle,
       author: {
-        name: employee.name,
-        role: employee.designation,
-        dept: employee.department,
-        initials: employee.avatarInitials,
+        name: employee?.name || 'Civil Service Officer',
+        role: employee?.designation || 'Statistical Investigator',
+        dept: employee?.department || 'National Statistical Office',
+        initials: employee?.avatarInitials || 'GOV',
       },
       date: 'Just now',
       views: 1,
@@ -99,7 +99,12 @@ export default function DiscussionsPage() {
           ...(prev.replies || []),
           {
             id: `rep-${Date.now()}`,
-            author: { name: employee.name, role: employee.designation, dept: employee.department, initials: employee.avatarInitials },
+            author: {
+              name: employee?.name || 'Civil Service Officer',
+              role: employee?.designation || 'Statistical Investigator',
+              dept: employee?.department || 'National Statistical Office',
+              initials: employee?.avatarInitials || 'GOV',
+            },
             date: 'Just now',
             content: replyInput,
             useful: 0,
@@ -110,7 +115,7 @@ export default function DiscussionsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Header Strip ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

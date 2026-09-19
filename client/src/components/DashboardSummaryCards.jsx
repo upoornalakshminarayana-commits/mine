@@ -34,11 +34,11 @@ function AnimatedCounter({ target, duration = 1.2, suffix = '' }) {
 export default function DashboardSummaryCards() {
   const { gapAnalysis, employee } = useStream();
 
-  const overallScore = gapAnalysis?.overallScore || employee.overallCompetency || 63;
-  const criticalGapsCount = gapAnalysis?.criticalGaps?.length || employee.criticalGapsCount || 1;
-  const totalGapsCount = (gapAnalysis?.criticalGaps?.length || 0) + (gapAnalysis?.developingGaps?.length || 0) || employee.prioritySkillGapsCount || 3;
-  const progressPercent = employee.learningProgressPercent || 72;
-  const readinessPercent = employee.futureRoleReadiness || 66;
+  const overallScore = gapAnalysis?.overallScore || employee?.overallCompetency || 63;
+  const criticalGapsCount = gapAnalysis?.criticalGaps?.length || employee?.criticalGapsCount || 1;
+  const totalGapsCount = (gapAnalysis?.criticalGaps?.length || 0) + (gapAnalysis?.developingGaps?.length || 0) || employee?.prioritySkillGapsCount || 3;
+  const progressPercent = employee?.learningProgressPercent || 72;
+  const readinessPercent = employee?.futureRoleReadiness || 66;
 
   const cards = [
     {

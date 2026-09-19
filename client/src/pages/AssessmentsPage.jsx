@@ -40,16 +40,18 @@ export default function AssessmentsPage() {
   const assessmentsList = [
     {
       id: 'initial',
-      title: 'Initial Diagnostic Stream Competency Assessment',
+      title: 'Role-Specific Diagnostic Competency Assessment',
       type: 'Diagnostic Benchmark',
-      description: 'Comprehensive 20-question baseline assessment across all core competencies mapped to your stream.',
-      duration: '30 mins',
+      description: 'Comprehensive baseline assessment across all 5 core blueprint competencies mapped to your department and current role.',
+      duration: '20 mins',
       status: 'completed',
       score: `${gapAnalysis?.overallScore || 63}%`,
-      badge: '✓ Completed',
+      badge: '✓ Evaluated',
       badgeClass: 'badge-gov-success',
-      actionLabel: 'View Detailed Diagnostic',
+      actionLabel: 'Diagnostic Report',
       actionPath: '/diagnostic',
+      secondaryActionLabel: 'Launch Role Test',
+      secondaryActionPath: '/assessment',
     },
     {
       id: 'skill-gap',
@@ -117,7 +119,7 @@ export default function AssessmentsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -219,13 +221,24 @@ export default function AssessmentsPage() {
                   <span>{item.actionLabel}</span>
                 </button>
               ) : item.actionPath ? (
-                <Link
-                  to={item.actionPath}
-                  className="btn-gov-secondary text-xs py-2 px-4 shadow-xs flex items-center gap-1"
-                >
-                  <span>{item.actionLabel}</span>
-                  <ChevronRight size={13} />
-                </Link>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Link
+                    to={item.actionPath}
+                    className="btn-gov-secondary text-xs py-2 px-3 shadow-xs flex items-center gap-1"
+                  >
+                    <span>{item.actionLabel}</span>
+                    <ChevronRight size={13} />
+                  </Link>
+                  {item.secondaryActionPath && (
+                    <Link
+                      to={item.secondaryActionPath}
+                      className="btn-gov-saffron text-xs py-2 px-3 shadow-xs flex items-center gap-1 font-semibold"
+                    >
+                      <RotateCcw size={12} />
+                      <span>{item.secondaryActionLabel}</span>
+                    </Link>
+                  )}
+                </div>
               ) : (
                 <button
                   disabled

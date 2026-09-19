@@ -31,7 +31,7 @@ export default function GovernmentFooter() {
       <div className="h-1 bg-gradient-to-r from-gov-saffron via-white to-gov-green" />
 
       {/* Main footer */}
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand column */}
           <div className="sm:col-span-2">
@@ -95,7 +95,7 @@ export default function GovernmentFooter() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-white/40">
             <p>© {year} Government Employee Competency Platform · Ministry of Statistics & Programme Implementation</p>
             <p className="flex items-center gap-2">

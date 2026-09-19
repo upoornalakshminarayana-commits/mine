@@ -149,7 +149,7 @@ function PublicNavbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200">
-      <nav className="container-xl flex items-center justify-between h-16">
+      <nav className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
             <GraduationCap size={18} className="text-white" />

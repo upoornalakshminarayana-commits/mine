@@ -31,20 +31,24 @@ import {
   Legend
 } from 'recharts';
 import { useStream } from '../context/StreamContext';
+import { VIRTUAL_LABS } from '../data/portalData';
 
 export default function VirtualLabWorkspace({ lab, onBack }) {
   const { submitVirtualLabAnalysis, labSubmissions } = useStream();
 
+  const fallbackLab = VIRTUAL_LABS[0] || {};
+  const activeLab = lab || fallbackLab;
+
   const [activeTab, setActiveTab] = useState('preview'); // preview | clean | analyze | visual | report
-  const [tasks, setTasks] = useState(lab.tasks || []);
-  const [dataset, setDataset] = useState(lab.sampleDataset || []);
+  const [tasks, setTasks] = useState(activeLab.tasks?.length ? activeLab.tasks : (fallbackLab.tasks || []));
+  const [dataset, setDataset] = useState(activeLab.sampleDataset?.length ? activeLab.sampleDataset : (fallbackLab.sampleDataset || []));
   const [cleaned, setCleaned] = useState(false);
   const [outlierFiltered, setOutlierFiltered] = useState(false);
   const [userReport, setUserReport] = useState(
-    'Based on the district survey data, average monthly household income across the 5 surveyed blocks is ₹36,250 with substantial variation between rural peripheral blocks (Chiraigaon) and urbanized blocks (Pindra). A 10% non-response was imputed in Pindra block.'
+    `Based on the ${activeLab.title || 'departmental laboratory'} scenario and dataset (${activeLab.datasetName || 'official frame'}), key performance indicators across the surveyed units show measurable variance. Non-response records were imputed using block-level mean calibrations, and extreme variance outliers were flagged for inspection.`
   );
 
-  const existingSubmission = labSubmissions?.[lab.id];
+  const existingSubmission = labSubmissions?.[activeLab.id];
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(existingSubmission?.results || null);
 
@@ -55,9 +59,12 @@ export default function VirtualLabWorkspace({ lab, onBack }) {
 
   // Tool 1: Clean Data action
   const handleCleanData = () => {
+    const validNums = dataset.filter(r => r.income != null).map(r => Number(r.income));
+    const avg = validNums.length ? Math.round(validNums.reduce((a, b) => a + b, 0) / validNums.length) : 34500;
+
     const updated = dataset.map(row => {
-      if (row.income === null) {
-        return { ...row, income: 34500, flag: 'Imputed (Block Mean)' };
+      if (row.income === null || row.income === undefined) {
+        return { ...row, income: avg, flag: 'Imputed (Block Mean)' };
       }
       return row;
     });
@@ -77,69 +84,75 @@ export default function VirtualLabWorkspace({ lab, onBack }) {
     ? dataset.filter(d => d.flag !== 'Outlier')
     : dataset;
 
-  // Compute live statistics
-  const validIncomes = displayDataset.filter(d => d.income !== null).map(d => d.income);
+  // Compute live statistics safely
+  const validIncomes = displayDataset.filter(d => d.income != null).map(d => Number(d.income));
   const meanIncome = validIncomes.length ? Math.round(validIncomes.reduce((a, b) => a + b, 0) / validIncomes.length) : 0;
   const medianIncome = validIncomes.length ? [...validIncomes].sort((a, b) => a - b)[Math.floor(validIncomes.length / 2)] : 0;
-  const stdDev = Math.round(Math.sqrt(validIncomes.map(x => Math.pow(x - meanIncome, 2)).reduce((a, b) => a + b, 0) / validIncomes.length));
+  const stdDev = validIncomes.length ? Math.round(Math.sqrt(validIncomes.map(x => Math.pow(x - meanIncome, 2)).reduce((a, b) => a + b, 0) / validIncomes.length)) : 0;
   const cvPercent = meanIncome ? Math.round((stdDev / meanIncome) * 100) : 0;
+
+  // Dynamic block summary data
+  const blockMap = {};
+  displayDataset.forEach(d => {
+    const b = d.block || 'Zone A';
+    if (!blockMap[b]) blockMap[b] = { count: 0, total: 0 };
+    blockMap[b].count += 1;
+    if (d.income != null) blockMap[b].total += Number(d.income);
+  });
+  const blockSummaryData = Object.entries(blockMap).map(([block, info]) => ({
+    block,
+    avgIncome: info.count > 0 ? Math.round(info.total / info.count) : 0,
+    count: info.count,
+  }));
 
   // Chart Data
   const scatterData = displayDataset
-    .filter(d => d.income !== null)
+    .filter(d => d.income != null)
     .map(d => ({
-      income: d.income,
-      foodExp: d.foodExp,
-      block: d.block,
-      members: d.members,
+      income: Number(d.income),
+      foodExp: d.foodExp != null ? Number(d.foodExp) : Math.round(Number(d.income) * 0.4),
+      block: d.block || 'Zone',
+      members: d.members || 1,
     }));
-
-  const blockSummaryData = [
-    { block: 'Kashi North', avgIncome: 30250, count: 3 },
-    { block: 'Chiraigaon', avgIncome: 29333, count: 3 },
-    { block: 'Pindra', avgIncome: 59250, count: 2 },
-    { block: 'Arajiline', avgIncome: 34500, count: 2 },
-    { block: 'Sewapuri', avgIncome: 36750, count: 2 },
-  ];
 
   // Submit Analysis
   const handleSubmitAnalysis = () => {
     setIsEvaluating(true);
     setTimeout(() => {
-      const evaluation = lab.defaultEvaluation || {
-        dataCleaning: 78,
-        statisticalReasoning: 54,
-        dataInterpretation: 62,
-        visualization: 81,
-        reportWriting: 70,
-        overallPracticalScore: 69,
-        keyGapTakeaway: 'Your practical application gap is mainly in Statistical Reasoning.',
+      const evaluation = activeLab.defaultEvaluation || {
+        dataCleaning: 82,
+        statisticalReasoning: 75,
+        dataInterpretation: 78,
+        visualization: 82,
+        reportWriting: 80,
+        overallPracticalScore: 80,
+        keyGapTakeaway: `Practical analysis for ${activeLab.title} completed successfully. Diagnostic feedback applied.`,
       };
       setEvaluationResult(evaluation);
       setIsEvaluating(false);
-      submitVirtualLabAnalysis(lab.id, evaluation);
+      submitVirtualLabAnalysis(activeLab.id, evaluation);
     }, 1200);
   };
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Top Scenario Banner ────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white rounded-gov-md shadow-lg relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="badge-gov-saffron text-[10px] uppercase font-bold">{lab.badge}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="badge-gov-saffron text-[10px] uppercase font-bold">{activeLab.badge || 'Core Simulation'}</span>
               <span className="text-white/60 text-xs">·</span>
-              <span className="text-xs text-white/80">Role Context: <strong>{lab.roleContext}</strong></span>
+              <span className="text-xs text-white/80">Role Context: <strong>{activeLab.roleContext || 'Cadre Specialist'}</strong></span>
               <span className="text-white/60 text-xs">·</span>
-              <span className="text-xs text-white/80">Dataset: <strong>{lab.datasetName}</strong></span>
+              <span className="text-xs text-white/80">Dataset: <strong>{activeLab.datasetName || 'official_sample.csv'}</strong></span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <FlaskConical size={22} className="text-gov-saffron" />
-              <span>Virtual Lab: {lab.title}</span>
+              <span>Virtual Lab: {activeLab.title}</span>
             </h1>
             <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-              {lab.scenario}
+              {activeLab.scenario || activeLab.description}
             </p>
           </div>
 
@@ -218,9 +231,11 @@ export default function VirtualLabWorkspace({ lab, onBack }) {
                         <td className="p-2.5 text-gov-gray-700">{row.block}</td>
                         <td className="p-2.5 text-gov-gray-700">{row.members}</td>
                         <td className="p-2.5 font-semibold text-gov-navy">
-                          {row.income !== null ? `₹${row.income.toLocaleString()}` : <span className="text-gov-red font-bold">NULL (Missing)</span>}
+                          {row.income != null ? `₹${Number(row.income).toLocaleString()}` : <span className="text-gov-red font-bold">NULL (Missing)</span>}
                         </td>
-                        <td className="p-2.5 text-gov-gray-700">₹{row.foodExp.toLocaleString()}</td>
+                        <td className="p-2.5 text-gov-gray-700">
+                          {row.foodExp != null ? `₹${Number(row.foodExp).toLocaleString()}` : '—'}
+                        </td>
                         <td className="p-2.5">
                           <span className={`badge-gov-${row.healthAccess === 'Yes' ? 'success' : 'warning'} text-[10px]`}>
                             {row.healthAccess}
@@ -325,7 +340,7 @@ export default function VirtualLabWorkspace({ lab, onBack }) {
                   • <strong>Skewness:</strong> {meanIncome > medianIncome + 3000 ? 'Positive Right-Skewed distribution due to high earner households.' : 'Relatively symmetrical income distribution after outlier treatment.'}
                 </p>
                 <p className="text-gov-gray-700 leading-relaxed">
-                  • <strong>Engel\'s Law Observation:</strong> Food expenditure accounts for <strong>{Math.round((displayDataset.reduce((a,b)=>a+b.foodExp,0)/displayDataset.reduce((a,b)=>a+(b.income||30000),0))*100)}%</strong> of overall household income.
+                  • <strong>Engel's Law Observation:</strong> Proportional indicator expenditure accounts for <strong>{Math.round((displayDataset.reduce((a,b)=>a+(Number(b.foodExp)||0),0)/Math.max(1, displayDataset.reduce((a,b)=>a+(Number(b.income)||30000),0)))*100)}%</strong> of overall unit allocation.
                 </p>
                 <button
                   onClick={() => toggleTask(2)}

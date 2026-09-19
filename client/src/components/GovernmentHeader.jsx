@@ -15,7 +15,7 @@ export default function GovernmentHeader({ ministry = 'Ministry of Statistics & 
       {/* Top stripe – saffron accent */}
       <div className="h-1 bg-gradient-to-r from-gov-saffron via-white to-gov-green" />
 
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 py-3">
           {/* Emblem placeholder */}
           <div className="shrink-0">

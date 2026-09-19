@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 // ─── BUTTON ───────────────────────────────────────────────────────────────────
 export function Button({
@@ -343,9 +343,4 @@ export function Table({ children, className }) {
       <table className="table">{children}</table>
     </div>
   );
-}
-
-// Utility
-function clsx(...args) {
-  return args.filter(Boolean).join(' ');
 }

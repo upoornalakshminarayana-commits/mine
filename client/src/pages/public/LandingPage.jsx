@@ -84,7 +84,7 @@ export default function LandingPage() {
           <svg width="100%" height="100%"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" /></pattern></defs><rect width="100%" height="100%" fill="url(#grid)" /></svg>
         </div>
 
-        <div className="container-xl relative py-20 lg:py-32">
+        <div className="w-full px-4 sm:px-6 lg:px-8 relative py-20 lg:py-32">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
@@ -139,7 +139,7 @@ export default function LandingPage() {
 
       {/* ── WHY COMPETENCY-BASED LEARNING ────────────────────────────────── */}
       <section className="section bg-white">
-        <div className="container-xl">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <span className="badge-primary text-xs mb-4 inline-block">Why Competency-Based Learning</span>
@@ -192,7 +192,7 @@ export default function LandingPage() {
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section className="section bg-slate-50">
-        <div className="container-xl">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="badge-primary text-xs mb-4 inline-block">How It Works</span>
             <h2 className="text-3xl font-bold text-slate-900">From profile to progress in six steps</h2>
@@ -222,7 +222,7 @@ export default function LandingPage() {
 
       {/* ── FEATURES ─────────────────────────────────────────────────────── */}
       <section className="section bg-white">
-        <div className="container-xl">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="badge-primary text-xs mb-4 inline-block">Platform Features</span>
             <h2 className="text-3xl font-bold text-slate-900">Everything you need for competency development</h2>
@@ -243,7 +243,7 @@ export default function LandingPage() {
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section className="section bg-slate-50">
-        <div className="container-xl max-w-3xl">
+        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-3xl">
           <div className="text-center mb-10">
             <span className="badge-primary text-xs mb-4 inline-block">FAQ</span>
             <h2 className="text-3xl font-bold text-slate-900">Frequently Asked Questions</h2>
@@ -266,7 +266,7 @@ export default function LandingPage() {
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
       <section className="section bg-primary-900 text-white">
-        <div className="container-xl text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 text-center">
           <Award size={40} className="text-primary-300 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-white mb-3">Ready to start your learning journey?</h2>
           <p className="text-primary-200 mb-8 max-w-xl mx-auto">

@@ -30,7 +30,7 @@ const CustomBarTooltip = ({ active, payload }) => {
 
 export default function ProgressPage() {
   return (
-    <div className="max-w-screen-xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl font-bold text-gov-navy">My Progress</h1>
         <p className="text-sm text-gov-gray-400 mt-1">Track your competency development over time.</p>

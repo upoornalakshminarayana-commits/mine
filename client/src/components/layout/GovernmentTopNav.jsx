@@ -15,11 +15,17 @@ import {
   BookOpen,
   FlaskConical,
   Target,
-  MessageSquare
+  MessageSquare,
+  Layers,
+  CreditCard,
+  RefreshCw,
+  Award
 } from 'lucide-react';
+import ProfileErrorBoundary from '../ProfileErrorBoundary';
 import { useStream } from '../../context/StreamContext';
+import { STREAMS } from '../../data/streamData';
 
-export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
+export default function GovernmentTopNav({ onLogout, onSwitchPortal, onMobileMenuToggle }) {
   const navigate = useNavigate();
   const {
     employee,
@@ -30,6 +36,8 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
     virtualLabs,
     discussions,
     gapAnalysis,
+    selectedStream,
+    switchStream,
   } = useStream();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,6 +64,8 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
 
   const totalResults = filteredCourses.length + filteredLabs.length + filteredDiscussions.length + filteredCompetencies.length;
 
+  const headerRef = useRef(null);
+
   // Click outside search
   useEffect(() => {
     function handleClickOutside(e) {
@@ -67,12 +77,42 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Dynamically measure and register exact header height across viewports
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const measured = headerRef.current.offsetHeight;
+        if (measured > 0) {
+          document.documentElement.style.setProperty('--header-height', `${measured}px`);
+        }
+      }
+    };
+
+    updateHeaderHeight();
+
+    let resizeObserver = null;
+    if (window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(updateHeaderHeight);
+      resizeObserver.observe(headerRef.current);
+    }
+    window.addEventListener('resize', updateHeaderHeight);
+
+    return () => {
+      if (resizeObserver) resizeObserver.disconnect();
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gov-gray-200 shadow-xs">
+    <header
+      ref={headerRef}
+      className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gov-gray-200 shadow-xs w-full header-fixed"
+    >
       {/* ── 1. Top Government Emblem Strip ─────────────────────────────────── */}
-      <div className="bg-gov-navy text-white text-xs border-b border-white/10">
+      <div className="bg-gov-navy text-white text-xs border-b border-white/10 w-full">
         <div className="h-0.5 bg-gradient-to-r from-gov-saffron via-white to-gov-green" />
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full border border-white/30 bg-white/10 flex items-center justify-center font-serif text-[8px] font-bold text-gov-saffron">
               GOV
@@ -80,11 +120,28 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
             <div>
               <span className="font-bold tracking-wide text-white">भारत सरकार · Government of India</span>
               <span className="text-white/40 mx-2 hidden md:inline">|</span>
-              <span className="text-white/80 hidden md:inline">{currentRole.ministry}</span>
+              <span className="text-white/80 hidden md:inline">{employee?.ministry || currentRole?.ministry || 'Ministry of Statistics & Programme Implementation'}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Live Professional Stream Switcher */}
+            <div className="hidden sm:flex items-center gap-1.5 bg-white/10 hover:bg-white/15 px-2.5 py-0.5 rounded text-[11px] border border-white/20 transition-colors">
+              <span className="text-xs">{selectedStream?.icon || '📊'}</span>
+              <select
+                value={selectedStream?.id || 'stats'}
+                onChange={(e) => switchStream(e.target.value, true)}
+                className="bg-transparent text-white font-semibold border-none outline-none cursor-pointer text-[11px] pr-1"
+                title="Switch active professional stream across all pages"
+              >
+                {STREAMS.map(s => (
+                  <option key={s.id} value={s.id} className="text-gray-900 bg-white">
+                    {s.icon} {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-center gap-1.5 bg-white/10 px-2 py-0.5 rounded text-[10px] border border-white/15">
               <span className="w-1.5 h-1.5 rounded-full bg-gov-saffron animate-pulse" />
               <span className="font-semibold text-white">iGOT Karmayogi Integrated</span>
@@ -94,7 +151,7 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
       </div>
 
       {/* ── 2. Main Search & Utility Bar ───────────────────────────────────── */}
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         
         {/* Left: Mobile menu button & App Title */}
         <div className="flex items-center gap-3 shrink-0">
@@ -309,11 +366,11 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
               className="flex items-center gap-2 p-1.5 hover:bg-gov-gray-100 rounded-gov transition-colors border border-transparent hover:border-gov-gray-200"
             >
               <div className="w-7 h-7 rounded-full bg-gov-navy text-white text-xs font-bold flex items-center justify-center shrink-0">
-                {employee.avatarInitials || 'AS'}
+                {employee?.avatarInitials || 'AS'}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-bold text-gov-navy leading-none">{employee.name || 'Arjun Sharma'}</p>
-                <p className="text-[10px] text-gov-gray-400 leading-none mt-0.5 max-w-[120px] truncate">{employee.designation}</p>
+                <p className="text-xs font-bold text-gov-navy leading-none">{employee?.name || 'Arjun Sharma'}</p>
+                <p className="text-[10px] text-gov-gray-400 leading-none mt-0.5 max-w-[120px] truncate">{employee?.designation || 'Statistical Investigator'}</p>
               </div>
               <ChevronDown size={13} className="text-gov-gray-400 hidden sm:block" />
             </button>
@@ -326,50 +383,112 @@ export default function GovernmentTopNav({ onLogout, onMobileMenuToggle }) {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-white border border-gov-gray-200 rounded-gov-md shadow-gov-dropdown z-40"
+                    className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white border border-gov-gray-200 rounded-gov-md shadow-gov-dropdown z-40 overflow-hidden"
                   >
-                    <div className="p-3.5 border-b border-gov-gray-200 bg-gov-off-white">
-                      <p className="text-xs font-bold text-gov-navy">{employee.name}</p>
-                      <p className="text-[10px] text-gov-gray-500 font-mono">{employee.id}</p>
-                      <p className="text-[11px] text-gov-blue font-medium mt-1 truncate">{employee.designation}</p>
-                    </div>
+                    <ProfileErrorBoundary compact onReset={() => setProfileOpen(false)}>
+                      {/* Employee Context Header */}
+                      <div className="p-3.5 border-b border-gov-gray-200 bg-gov-off-white">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-full bg-gov-navy text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-xs ring-2 ring-gov-navy/10">
+                            {employee?.avatarInitials || 'E1'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-xs font-bold text-gov-navy truncate">{employee?.name || 'Employee 01'}</p>
+                              <span className="text-[10px] bg-gov-blue/10 text-gov-blue px-1.5 py-0.5 rounded font-mono font-bold">
+                                {employee?.id || 'EMP-01'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gov-blue font-semibold truncate">
+                              {employee?.designation || employee?.currentRole || 'Statistical Investigator'}
+                            </p>
+                            <p className="text-[10px] text-gov-gray-500 truncate mt-0.5">
+                              {employee?.department || employee?.ministry || 'MoSPI / National Statistical Office'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                    <div className="p-1.5 space-y-0.5 text-xs">
-                      <Link
-                        to="/profile"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700"
-                      >
-                        <User size={14} className="text-gov-gray-400" />
-                        <span>My Official Profile</span>
-                      </Link>
-                      <Link
-                        to="/future-role"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700"
-                      >
-                        <Target size={14} className="text-gov-gray-400" />
-                        <span>Career Path & Promotion</span>
-                      </Link>
-                      <Link
-                        to="/certificates"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700"
-                      >
-                        <Shield size={14} className="text-gov-gray-400" />
-                        <span>Verified Certificates</span>
-                      </Link>
-                    </div>
+                      {/* Profile Navigation Links */}
+                      <div className="p-1.5 space-y-0.5 text-xs">
+                        <Link
+                          to="/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700 transition-colors font-medium"
+                        >
+                          <User size={15} className="text-gov-gray-400" />
+                          <span>My Profile</span>
+                        </Link>
+                        <Link
+                          to="/passport"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700 transition-colors font-medium"
+                        >
+                          <CreditCard size={15} className="text-gov-gray-400" />
+                          <span>Digital Passport</span>
+                        </Link>
+                        <Link
+                          to="/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700 transition-colors font-medium"
+                        >
+                          <Settings size={15} className="text-gov-gray-400" />
+                          <span>Profile Setup</span>
+                        </Link>
+                        <Link
+                          to="/future-role"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700 transition-colors font-medium"
+                        >
+                          <Target size={15} className="text-gov-gray-400" />
+                          <span>Career Path & Promotion</span>
+                        </Link>
+                        <Link
+                          to="/certificates"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-gray-100 text-gov-gray-700 transition-colors font-medium"
+                        >
+                          <Shield size={15} className="text-gov-gray-400" />
+                          <span>Verified Certificates</span>
+                        </Link>
+                      </div>
 
-                    <div className="p-1.5 border-t border-gov-gray-200">
-                      <button
-                        onClick={onLogout}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-red-light text-gov-red text-xs font-semibold transition-colors"
-                      >
-                        <LogOut size={14} />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
+                      {/* Administrative & Account Actions */}
+                      <div className="p-1.5 border-t border-gov-gray-200 space-y-1">
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            navigate('/employee/select');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-blue-light/60 text-gov-navy text-xs font-semibold transition-colors text-left"
+                        >
+                          <RefreshCw size={14} className="text-gov-blue" />
+                          <span>Switch Employee</span>
+                        </button>
+                        {onSwitchPortal && (
+                          <button
+                            onClick={() => {
+                              setProfileOpen(false);
+                              onSwitchPortal();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-blue-light/60 text-gov-blue text-xs font-semibold transition-colors text-left"
+                          >
+                            <Layers size={14} />
+                            <span>Switch Portal / Persona</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-gov hover:bg-gov-red-light text-gov-red text-xs font-semibold transition-colors text-left"
+                        >
+                          <LogOut size={14} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </ProfileErrorBoundary>
                   </motion.div>
                 </>
               )}

@@ -16,11 +16,13 @@ import {
   Clock,
   Award,
   ChevronRight,
-  X
+  X,
+  FileBadge,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { to: '/passport', label: 'Digital Passport', icon: FileBadge, badge: 'Official' },
   { to: '/profile', label: 'My Profile', icon: User },
   { to: '/competencies', label: 'Competencies', icon: Target },
   { to: '/skill-gaps', label: 'Skill Gaps', icon: AlertTriangle, badge: '3' },
@@ -38,7 +40,7 @@ const navItems = [
 
 export default function EmployeeSidebar({ mobile = false, onClose }) {
   const location = useLocation();
-  const { employee, setIsAIAssistantOpen, selectedStream } = useStream();
+  const { employee, setIsAIAssistantOpen, selectedStream, departmentConfig, gapAnalysis } = useStream();
 
   const isActive = (to) => {
     if (to === '/dashboard') return location.pathname === '/dashboard';
@@ -76,24 +78,34 @@ export default function EmployeeSidebar({ mobile = false, onClose }) {
 
       {/* Portal Brand Tag (Desktop) */}
       {!mobile && (
-        <div className="px-4 py-3 border-b border-gov-gray-200 bg-gov-off-white/80 flex items-center justify-between">
+        <div className="shrink-0 px-4 py-3 border-b border-gov-gray-200 bg-gov-off-white/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-gov-navy flex items-center justify-center text-white text-[10px] font-bold">
               GOV
             </div>
             <div>
               <p className="text-[11px] font-bold text-gov-navy uppercase tracking-wider">Employee Portal</p>
-              <p className="text-[10px] text-gov-gray-400">{selectedStream?.name || 'Statistics'}</p>
+              <p className="text-[10px] text-gov-gray-400 truncate max-w-[150px]">{departmentConfig?.sidebarContext || departmentConfig?.name || selectedStream?.name || 'Statistics'}</p>
             </div>
           </div>
           <span className="w-2 h-2 rounded-full bg-gov-green animate-pulse" title="System Active" />
         </div>
       )}
 
-      {/* Navigation Links (14 items) */}
+      {/* Navigation Links (15 items) */}
       <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5 text-xs">
-        {navItems.map(({ to, label, icon: Icon, badge, isAction }) => {
+        {navItems.map(({ to, label, icon: Icon, badge: defaultBadge, isAction }) => {
           const active = isActive(to);
+
+          // Dynamically compute badges from live employee context
+          let dynamicBadge = defaultBadge;
+          if (to === '/skill-gaps') {
+            const gapCount = (gapAnalysis?.criticalGaps?.length || 0) + (gapAnalysis?.developingGaps?.length || 0) || employee?.prioritySkillGapsCount || 3;
+            dynamicBadge = String(gapCount);
+          } else if (to === '/assessments') {
+            const hasPending = !localStorage.getItem(`ks_diagnostic_completed_${employee?.id}`);
+            if (hasPending) dynamicBadge = '1';
+          }
 
           if (isAction) {
             return (
@@ -129,17 +141,17 @@ export default function EmployeeSidebar({ mobile = false, onClose }) {
                 className={`shrink-0 ${active ? 'text-white' : 'text-gov-gray-400'}`}
               />
               <span className="flex-1 truncate">{label}</span>
-              {badge && (
+              {dynamicBadge && (
                 <span
                   className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                     active
                       ? 'bg-white/20 text-white'
-                      : badge === 'New'
+                      : dynamicBadge === 'New' || dynamicBadge === 'Official'
                       ? 'bg-gov-green text-white'
                       : 'bg-gov-red-light text-gov-red border border-red-200'
                   }`}
                 >
-                  {badge}
+                  {dynamicBadge}
                 </span>
               )}
             </Link>
@@ -148,7 +160,7 @@ export default function EmployeeSidebar({ mobile = false, onClose }) {
       </nav>
 
       {/* Bottom: Employee Profile Card with Online/Active Indicator */}
-      <div className="p-3 border-t border-gov-gray-200 bg-gov-off-white">
+      <div className="shrink-0 p-3 border-t border-gov-gray-200 bg-gov-off-white">
         <Link
           to="/profile"
           onClick={mobile ? onClose : undefined}
@@ -157,7 +169,7 @@ export default function EmployeeSidebar({ mobile = false, onClose }) {
           {/* Avatar with active green dot */}
           <div className="relative shrink-0">
             <div className="w-9 h-9 rounded-full bg-gov-navy text-white font-bold text-xs flex items-center justify-center border border-white shadow-xs">
-              {employee.avatarInitials || 'AS'}
+              {employee?.avatarInitials || 'AS'}
             </div>
             <span
               className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gov-green border-2 border-white rounded-full"
@@ -168,10 +180,10 @@ export default function EmployeeSidebar({ mobile = false, onClose }) {
           {/* Employee Metadata */}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold text-gov-navy truncate leading-tight">
-              {employee.name || 'Arjun Sharma'}
+              {employee?.name || 'Arjun Sharma'}
             </p>
             <p className="text-[10px] text-gov-gray-400 truncate leading-tight mt-0.5">
-              {employee.designation || 'Statistical Investigator'}
+              {employee?.designation || 'Statistical Investigator'}
             </p>
           </div>
 

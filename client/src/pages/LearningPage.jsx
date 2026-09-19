@@ -21,7 +21,7 @@ export default function LearningPage() {
   });
 
   return (
-    <div className="max-w-screen-xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Page header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl font-bold text-gov-navy">Learning</h1>

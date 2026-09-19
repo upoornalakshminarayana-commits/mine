@@ -16,91 +16,85 @@ import {
 import { useStream } from '../context/StreamContext';
 
 export default function LearningPathPage() {
-  const { employee, selectedStream } = useStream();
+  const { employee, gapAnalysis, departmentConfig, domainCourses, domainTasks } = useStream();
 
-  // Step-by-step personalized learning path sequence
-  const pathSteps = [
-    {
-      step: 1,
-      title: 'Skill Gap Identified',
-      subtitle: 'Survey Sampling (42% vs required 75%)',
-      desc: 'Diagnostic assessment identified 33% gap in stratified probability allocation.',
-      status: 'completed',
-      icon: AlertTriangle,
-      badge: 'Completed 16 Sep',
-      actionLabel: 'View Diagnostic',
-      actionPath: '/skill-gaps',
-    },
-    {
-      step: 2,
-      title: 'Fundamentals Learning',
-      subtitle: 'Fundamentals of Survey Sampling (iGOT)',
-      desc: 'Core probability distributions, sampling frames, and sampling error formulas.',
-      status: 'completed',
-      icon: BookOpen,
-      badge: 'Completed 18 Sep',
-      actionLabel: 'Review Notes',
-      actionPath: '/explore-learning',
-    },
-    {
-      step: 3,
-      title: 'Intermediate Coursework',
-      subtitle: 'Stratification & Cluster Sampling (Module 3-4)',
-      desc: 'Optimal allocation techniques and non-sampling error handling.',
-      status: 'active',
-      icon: Sparkles,
-      badge: 'Current Step (65% Progress)',
-      actionLabel: 'Resume Course',
-      actionPath: '/explore-learning',
-    },
-    {
-      step: 4,
-      title: 'Virtual Lab Practice',
-      subtitle: 'District Survey Analysis Lab',
-      desc: 'Hands-on practice: clean survey CSV dataset, calculate CV, and draft official summary.',
-      status: 'completed',
-      icon: FlaskConical,
-      badge: 'Score: 69%',
-      actionLabel: 'View Evaluation',
-      actionPath: '/virtual-labs',
-    },
-    {
-      step: 5,
-      title: 'Practical Lab Assessment',
-      subtitle: 'Sampling Simulator & Error Verification',
-      desc: 'Scenario-based evaluation of design effects and sample weights.',
-      status: 'upcoming',
-      icon: ClipboardCheck,
-      badge: 'Next Step',
-      actionLabel: 'Open Lab',
-      actionPath: '/virtual-labs',
-    },
-    {
-      step: 6,
-      title: 'Official Re-Assessment',
-      subtitle: 'Survey Sampling Competency Re-Evaluation',
-      desc: 'Formal 15-question proctored re-assessment to certify 75%+ threshold.',
-      status: 'locked',
-      icon: RotateCcw,
-      badge: 'Scheduled for 23 Sep',
-      actionLabel: 'View Schedule',
-      actionPath: '/assessments',
-    },
-    {
-      step: 7,
-      title: 'Skill Gap Closed & Certified',
-      subtitle: 'MoSPI Certified Survey Specialist Badge',
-      desc: 'Official digital credential issued to your iGOT profile; qualifies for SSO promotion.',
-      status: 'locked',
-      icon: Award,
-      badge: 'Target Milestone',
-      actionLabel: 'View Certificate Criteria',
-      actionPath: '/certificates',
-    },
-  ];
+  const courses = domainCourses || [];
+  const tasks = domainTasks || [];
+  const topGap = gapAnalysis?.criticalGaps?.[0] || gapAnalysis?.developingGaps?.[0];
+
+  // Derive step-by-step personalized learning path sequence from gapAnalysis or department courses
+  const pathSteps = (gapAnalysis?.learningPath && gapAnalysis.learningPath.length > 0)
+    ? gapAnalysis.learningPath.map((lp, idx) => ({
+        step: lp.step || idx + 1,
+        title: lp.title,
+        subtitle: `${lp.competencyName} · ${lp.courseTitle || ''}`,
+        desc: lp.description,
+        status: idx === 0 ? 'completed' : idx === 1 ? 'active' : idx === 2 ? 'upcoming' : 'locked',
+        icon: idx === 0 ? AlertTriangle : idx === 1 ? BookOpen : idx === 2 ? Sparkles : FlaskConical,
+        badge: `${lp.currentLevel} → ${lp.targetLevel}`,
+        actionLabel: idx === 0 ? 'View Gap Analysis' : 'Start Learning',
+        actionPath: idx === 0 ? '/skill-gaps' : '/explore-learning',
+      }))
+    : [
+        {
+          step: 1,
+          title: 'Skill Gap Identified',
+          subtitle: `${topGap?.name || departmentConfig?.competencies?.[0]?.name || 'Core Domain Competency'} (Priority Remediation)`,
+          desc: `Assessment identified development area in ${topGap?.name || departmentConfig?.competencies?.[0]?.name || 'Core Domain Competency'}.`,
+          status: 'completed',
+          icon: AlertTriangle,
+          badge: 'Verified in Diagnostic',
+          actionLabel: 'View Diagnostic',
+          actionPath: '/skill-gaps',
+        },
+        {
+          step: 2,
+          title: 'Core Fundamentals Coursework',
+          subtitle: courses[0]?.title || 'Fundamentals Course',
+          desc: courses[0]?.description || 'Foundational conceptual and methodology training.',
+          status: 'active',
+          icon: BookOpen,
+          badge: 'Current Step',
+          actionLabel: 'Start Course',
+          actionPath: '/explore-learning',
+        },
+        {
+          step: 3,
+          title: 'Advanced Applied Specialization',
+          subtitle: courses[1]?.title || 'Advanced Methodology Course',
+          desc: courses[1]?.description || 'Deep-dive operational skills and real dataset analysis.',
+          status: 'upcoming',
+          icon: Sparkles,
+          badge: 'Next Milestone',
+          actionLabel: 'View Details',
+          actionPath: '/explore-learning',
+        },
+        {
+          step: 4,
+          title: 'Practical Simulation Lab',
+          subtitle: tasks[0]?.title || 'Department Simulation Lab',
+          desc: tasks[0]?.scenario || 'Hands-on practical scenario and evaluation.',
+          status: 'locked',
+          icon: FlaskConical,
+          badge: 'Simulation Assessment',
+          actionLabel: 'Open Lab',
+          actionPath: '/virtual-labs',
+        },
+        {
+          step: 5,
+          title: 'Cadre Promotion Qualification',
+          subtitle: `${departmentConfig?.roleConfig?.targetRoleTitle || 'Senior Officer'} Readiness Re-Assessment`,
+          desc: 'Formal qualification evaluation to certify benchmark proficiency.',
+          status: 'locked',
+          icon: RotateCcw,
+          badge: 'Benchmark: ≥75%',
+          actionLabel: 'View Criteria',
+          actionPath: '/future-role',
+        },
+      ];
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

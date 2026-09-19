@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sparkles,
   TrendingUp,
@@ -20,6 +20,7 @@ import {
 import { useStream } from '../context/StreamContext';
 import DashboardSummaryCards from '../components/DashboardSummaryCards';
 import NextBestActionCard from '../components/NextBestActionCard';
+import DailyLearningStreakCard from '../components/DailyLearningStreakCard';
 import CompetencyRadar from '../components/CompetencyRadar';
 import GrowthChart from '../components/GrowthChart';
 import { serviceImages } from '../data/mockData';
@@ -47,9 +48,13 @@ function SectionHeader({ title, subtitle, link, linkLabel }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const {
     employee,
     selectedStream,
+    departmentConfig,
+    domainTasks,
+    domainRecommendedCourses,
     currentRole,
     gapAnalysis,
     virtualLabs,
@@ -62,22 +67,84 @@ export default function DashboardPage() {
   // Dynamic greeting based on time of day
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const firstName = employee.name ? employee.name.split(' ')[0] : 'Arjun';
+  const displayName = employee?.name || 'Officer';
 
-  const overallScore = gapAnalysis?.overallScore || employee.overallCompetency || 63;
-  const targetLab = virtualLabs[0] || {
+  const overallScore = gapAnalysis?.overallScore || employee?.overallCompetency || 63;
+  const targetLab = (domainTasks && domainTasks[0]) ? {
+    id: domainTasks[0].id,
+    title: domainTasks[0].title,
+    badge: domainTasks[0].category || 'Core Departmental Scenario',
+    scenario: domainTasks[0].scenario,
+  } : virtualLabs[0] || {
     id: 'lab-stats-01',
     title: 'District Survey Analysis',
     badge: 'Core Statistical Scenario',
     scenario: 'Analyze Varanasi household survey data, resolve missing values, compute CV, and submit findings.',
   };
 
-  const recommendedCoursesList = courses.filter(c => c.isEnrolled || c.badge.includes('Recommended') || c.badge.includes('Priority')).slice(0, 3);
+  const recommendedCoursesList = (domainRecommendedCourses && domainRecommendedCourses.length > 0)
+    ? domainRecommendedCourses.slice(0, 3)
+    : courses.filter(c => c.isEnrolled || c.badge.includes('Recommended') || c.badge.includes('Priority')).slice(0, 3);
   const recentDiscussions = discussions.slice(0, 2);
 
   return (
-    <div className="space-y-7 max-w-screen-2xl mx-auto">
+    <div className="space-y-7 w-full">
       
+      {/* ── 0. COMPACT EMPLOYEE CONTEXT BANNER (PHASE 2 REQUIREMENT) ─── */}
+      <motion.div
+        {...fadeUp}
+        className="gov-card p-4 sm:p-5 bg-white border-2 border-gov-blue/20 rounded-gov-md shadow-xs space-y-3"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gov-gray-100">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-gov-saffron-light border border-orange-200 text-gov-saffron text-[10px] font-bold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-gov-saffron animate-pulse" />
+              <span>DEMO / TEST ACCOUNT</span>
+            </div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black text-gov-navy">
+                {employee?.id === 'demo-employee-01' ? 'Employee 01' :
+                 employee?.id === 'demo-employee-02' ? 'Employee 02' :
+                 employee?.id === 'demo-employee-03' ? 'Employee 03' :
+                 employee?.id === 'demo-employee-04' ? 'Employee 04' :
+                 employee?.id === 'demo-employee-05' ? 'Employee 05' : 'Demo Employee'}
+                <span className="font-normal text-gov-gray-500 text-sm ml-1.5">({employee?.name || 'Officer'})</span>
+              </h2>
+              <span className="text-gov-gray-400">·</span>
+              <span className="text-xs font-semibold text-gov-navy">{employee?.department || 'Department'}</span>
+              <span className="text-gov-gray-400">·</span>
+              <span className="text-xs font-bold text-gov-blue">{employee?.designation || 'Statistical Investigator'}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setOnboardingStep('assessment');
+              navigate('/employee/diagnostic');
+            }}
+            className="btn-gov-saffron px-4 py-2 text-xs font-bold shrink-0 shadow-xs flex items-center gap-1.5 hover:scale-[1.02] transition-transform"
+            title="Launch personalized diagnostic assessment for this role"
+          >
+            <Sparkles size={14} />
+            <span>Start Competency Assessment</span>
+          </button>
+        </div>
+
+        {/* Competency Areas */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-0.5">
+          <span className="text-[10px] font-bold text-gov-gray-400 uppercase tracking-wider shrink-0">
+            Competency Areas:
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {(employee?.competenciesFocus || ['Survey Sampling', 'Statistical Methods', 'Data Analysis', 'Survey Operations', 'Data Quality']).map((c) => (
+              <span key={c} className="badge-gov-info text-[11px] px-2.5 py-0.5 font-medium border border-blue-200">
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
       {/* ── 1. WELCOME & ROLE GREETING BANNER ───────────────────────────────── */}
       <motion.div
         {...fadeUp}
@@ -87,21 +154,21 @@ export default function DashboardPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="badge-gov-saffron text-[10px] font-bold">
-                {selectedStream?.icon} {selectedStream?.name || 'Statistics & Data Analytics'}
+                {departmentConfig?.icon || selectedStream?.icon || '🏛️'} {departmentConfig?.name || selectedStream?.name} · {departmentConfig?.domain || selectedStream?.domain || 'Official Domain'}
               </span>
               <span className="text-white/40">·</span>
-              <span className="text-xs text-white/80 font-semibold">{employee.department}</span>
+              <span className="text-xs text-white/80 font-semibold">{employee?.department || 'Department'}</span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              {timeGreeting}, {firstName}
+              {timeGreeting}, {displayName}
             </h1>
 
             {/* Official Designation & Career Path Transition */}
             <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
               <div className="flex items-center gap-1.5 text-white/90">
                 <span className="text-white/60">Current Role:</span>
-                <strong className="text-white">{employee.designation || 'Statistical Investigator'}</strong>
+                <strong className="text-white">{employee?.designation || 'Statistical Investigator'}</strong>
               </div>
 
               <span className="text-white/40 hidden sm:inline">|</span>
@@ -109,9 +176,9 @@ export default function DashboardPage() {
               <div className="flex items-center gap-1.5 text-gov-saffron">
                 <span className="text-white/60">Career Path:</span>
                 <strong className="text-gov-saffron flex items-center gap-1">
-                  <span>{employee.designation}</span>
+                  <span>{employee?.designation || 'Investigator'}</span>
                   <ArrowRight size={12} />
-                  <span>{employee.targetRole || 'Senior Statistical Officer'}</span>
+                  <span>{employee?.targetRole || 'Senior Statistical Officer'}</span>
                 </strong>
               </div>
             </div>
@@ -124,7 +191,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs font-bold text-white leading-none">Assessment Completed</p>
-              <p className="text-[10px] text-white/70 mt-1">iGOT Synced: {employee.igotId}</p>
+              <p className="text-[10px] text-white/70 mt-1">iGOT Synced: {employee?.igotId || 'iGOT-2026-ACTIVE'}</p>
             </div>
           </div>
         </div>
@@ -133,6 +200,11 @@ export default function DashboardPage() {
       {/* ── 2. DASHBOARD SUMMARY CARDS (Animated Counters) ─────────────────── */}
       <motion.section {...fadeUp} transition={{ delay: 0.05 }}>
         <DashboardSummaryCards />
+      </motion.section>
+
+      {/* ── 2.1 COMPACT DAILY LEARNING STREAK BAR ─────────────────────────── */}
+      <motion.section {...fadeUp} transition={{ delay: 0.08 }}>
+        <DailyLearningStreakCard compact />
       </motion.section>
 
       {/* ── 3. "YOUR NEXT BEST ACTION" (Large Highlighted Card) ─────────────── */}
@@ -150,7 +222,7 @@ export default function DashboardPage() {
           <motion.section {...fadeUp} transition={{ delay: 0.15 }}>
             <SectionHeader
               title="Competency Profile & Benchmark Levels"
-              subtitle="Current proficiency against Senior Statistical Officer role requirements"
+              subtitle={`Current proficiency against ${employee.targetRole || 'target cadre'} role requirements`}
               link="/competencies"
               linkLabel="Full Radar & Details"
             />
@@ -314,7 +386,7 @@ export default function DashboardPage() {
             <div className="p-3 bg-gov-off-white rounded-gov border border-gov-gray-200 space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-gov-gray-500">Target Role:</span>
-                <strong className="text-gov-navy">{employee.targetRole || 'Senior Statistical Officer'}</strong>
+                <strong className="text-gov-navy">{employee?.targetRole || 'Senior Statistical Officer'}</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gov-gray-500">Role Readiness:</span>
@@ -326,7 +398,7 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-[11px] text-gov-gray-600 leading-relaxed">
-              Elevating your Survey Sampling score from 42% to 75% satisfies 80% of official promotion benchmark criteria.
+              Elevating your {gapAnalysis?.criticalGaps?.[0]?.name || employee?.competenciesFocus?.[0] || 'core competency'} score satisfies official promotion benchmark criteria.
             </p>
           </motion.div>
 

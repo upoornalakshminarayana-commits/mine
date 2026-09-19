@@ -37,14 +37,176 @@
 
 /* ── BASE ──────────────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --header-height: 99px;
+}
 
 body {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
   font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
   background-color: #F4F6F9;
   color: #1A202C;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Prevent document/body level scroll when inside the Employee Portal */
+html.portal-active,
+body.portal-active,
+html.pre-dashboard-active,
+body.pre-dashboard-active {
+  height: 100%;
+  max-height: 100vh;
+  overflow: hidden !important;
+}
+
+/* Pre-Dashboard Unified Shell Architecture */
+.pre-dashboard-shell-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #F4F6F9;
+  z-index: 1;
+}
+
+.pre-dashboard-header-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.pre-dashboard-scroll-container {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pre-dashboard-scroll-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.pre-dashboard-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pre-dashboard-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(11, 30, 59, 0.2);
+  border-radius: 9999px;
+}
+
+.pre-dashboard-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(11, 30, 59, 0.4);
+}
+
+#root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-shell-root {
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - var(--header-height, 99px));
+  margin-top: var(--header-height, 99px);
+  overflow: hidden;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-scroll-container {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior-y: contain;
+}
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.writing-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+/* Elegant scrollbars for independent scroll container and sidebar navigation */
+.main-scroll-container::-webkit-scrollbar,
+nav::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.main-scroll-container::-webkit-scrollbar-track,
+nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.main-scroll-container::-webkit-scrollbar-thumb,
+nav::-webkit-scrollbar-thumb {
+  background: rgba(11, 37, 69, 0.15);
+  border-radius: 4px;
+}
+.main-scroll-container::-webkit-scrollbar-thumb:hover,
+nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(11, 37, 69, 0.28);
 }
 
 h1, h2, h3, h4, h5, h6 {

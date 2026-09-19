@@ -18,97 +18,116 @@ import {
 import { useStream } from '../context/StreamContext';
 
 export default function SkillGapsPage() {
-  const { gapAnalysis, selectedStream, currentRole } = useStream();
+  const { gapAnalysis, employee, departmentConfig, domainCourses, domainTasks } = useStream();
   const [filterSeverity, setFilterSeverity] = useState('all');
 
-  // Categorized skill gaps with complete ecosystem linkages
-  const allGaps = [
-    {
-      id: 'gap-1',
-      skill: 'Survey Sampling & Design',
-      severity: 'CRITICAL',
-      current: 42,
-      required: 75,
-      gap: 33,
-      reason: `Mandatory operational competency for ${currentRole.role}. Multi-stage stratified sampling precision is required to minimize design effects in national official statistics publications.`,
-      recommendedCourse: 'Fundamentals of Survey Sampling',
-      courseProvider: 'iGOT Karmayogi',
-      relatedLab: 'District Survey Analysis',
-      relatedDiscussion: 'How do you handle missing values in survey data?',
-      reassessmentStatus: 'Ready after Lab Completion',
-      reassessmentUnlocked: true,
-      estimatedWeeks: 3,
-    },
-    {
-      id: 'gap-2',
-      skill: 'Python for Automated Data Processing',
-      severity: 'HIGH',
-      current: 61,
-      required: 75,
-      gap: 14,
-      reason: 'Automated data pipelines and ETL scripts using Pandas/NumPy are required to accelerate district data aggregation cycles.',
-      recommendedCourse: 'Python for Government Data Analysis',
-      courseProvider: 'iGOT Karmayogi',
-      relatedLab: 'District Survey Analysis',
-      relatedDiscussion: 'Python Pandas vs R for National Macro-Economic Aggregations',
-      reassessmentStatus: 'Requires Course Completion',
-      reassessmentUnlocked: false,
-      estimatedWeeks: 4,
-    },
-    {
-      id: 'gap-3',
-      skill: 'Executive Data Visualization & Dashboards',
-      severity: 'MEDIUM',
-      current: 58,
-      required: 70,
-      gap: 12,
-      reason: 'Essential for presenting high-level statistical findings, infographics, and trend alerts to senior policy makers.',
-      recommendedCourse: 'Data Visualization & Dashboard Design with Power BI',
-      courseProvider: 'TPAC',
-      relatedLab: 'District Survey Analysis',
-      relatedDiscussion: 'Understanding Stratified Sampling in NSS 79th Round',
-      reassessmentStatus: 'Available Now',
-      reassessmentUnlocked: true,
-      estimatedWeeks: 2,
-    },
-  ];
+  const roleTitle = departmentConfig?.roleConfig?.title || employee?.designation || 'Civil Service Officer';
+  const courses = domainCourses || [];
+  const tasks = domainTasks || [];
+
+  // Dynamically derive all gaps from role-specific gapAnalysis
+  const allGaps = (gapAnalysis?.criticalGaps || gapAnalysis?.developingGaps)
+    ? [
+        ...(gapAnalysis.criticalGaps || []).map((g, idx) => {
+          const matchedCourse = courses.find(c => (c.competencyName || c.competency || '').toLowerCase() === (g.name || '').toLowerCase()) || courses[0];
+          const matchedTask = tasks.find(t => (t.competencyTarget || t.targetCompetency || '').toLowerCase() === (g.name || '').toLowerCase()) || tasks[0];
+          return {
+            id: `crit-gap-${idx}`,
+            skill: g.name,
+            severity: 'CRITICAL',
+            current: g.current,
+            required: g.required,
+            gap: g.gap,
+            reason: `Mandatory operational competency for ${roleTitle} in ${departmentConfig?.name || 'Department'}. A gap of ${g.gap}% must be remediated to meet benchmark.`,
+            recommendedCourse: matchedCourse?.title || 'Core Competency Course',
+            courseProvider: matchedCourse?.provider || 'iGOT Karmayogi',
+            relatedLab: matchedTask?.title || 'Departmental Simulation Lab',
+            relatedDiscussion: `Best practices for ${g.name} field implementation`,
+            reassessmentStatus: 'Available after Coursework Completion',
+            reassessmentUnlocked: true,
+            estimatedWeeks: Math.max(2, Math.ceil(g.gap / 10)),
+          };
+        }),
+        ...(gapAnalysis.developingGaps || []).map((g, idx) => {
+          const matchedCourse = courses.find(c => (c.competencyName || c.competency || '').toLowerCase() === (g.name || '').toLowerCase()) || courses[idx % courses.length];
+          const matchedTask = tasks.find(t => (t.competencyTarget || t.targetCompetency || '').toLowerCase() === (g.name || '').toLowerCase()) || tasks[idx % tasks.length];
+          return {
+            id: `dev-gap-${idx}`,
+            skill: g.name,
+            severity: g.gap > 15 ? 'HIGH' : 'MEDIUM',
+            current: g.current,
+            required: g.required,
+            gap: g.gap,
+            reason: `Operational competency for ${roleTitle}. Requires ongoing skill enhancement to reach advanced proficiency.`,
+            recommendedCourse: matchedCourse?.title || 'Advanced Methodology Course',
+            courseProvider: matchedCourse?.provider || 'iGOT / TPAC',
+            relatedLab: matchedTask?.title || 'Departmental Simulation Lab',
+            relatedDiscussion: `Practical guidelines for ${g.name}`,
+            reassessmentStatus: 'Ready for Re-Assessment',
+            reassessmentUnlocked: true,
+            estimatedWeeks: Math.max(1, Math.ceil(g.gap / 10)),
+          };
+        }),
+      ]
+    : [
+        {
+          id: 'gap-default-1',
+          skill: departmentConfig?.competencies[0]?.name || 'Core Domain Competency',
+          severity: 'CRITICAL',
+          current: 45,
+          required: 80,
+          gap: 35,
+          reason: `Mandatory operational competency for ${roleTitle} under ${departmentConfig?.name || 'Department'}.`,
+          recommendedCourse: courses[0]?.title || 'Fundamentals Course',
+          courseProvider: 'iGOT Karmayogi',
+          relatedLab: tasks[0]?.title || 'Simulation Lab',
+          relatedDiscussion: 'Handling field inconsistencies',
+          reassessmentStatus: 'Available Now',
+          reassessmentUnlocked: true,
+          estimatedWeeks: 3,
+        }
+      ];
+
+  const criticalCount = allGaps.filter(g => g.severity === 'CRITICAL').length;
+  const highCount = allGaps.filter(g => g.severity === 'HIGH').length;
+  const mediumCount = allGaps.filter(g => g.severity === 'MEDIUM').length;
 
   const filteredGaps = filterSeverity === 'all'
     ? allGaps
     : allGaps.filter(g => g.severity.toLowerCase() === filterSeverity.toLowerCase());
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* ── Page Header ────────────────────────────────────────────────────── */}
       <div className="gov-card p-6 bg-gradient-to-r from-gov-navy via-[#0f2e54] to-gov-blue text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1.5 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 bg-gov-saffron text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold">
               <AlertTriangle size={12} />
-              <span>AI Diagnostic & Gap Remediation</span>
+              <span>AI Diagnostic & Gap Remediation · {departmentConfig?.shortName || 'Department'}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               Identified Skill Gaps & Action Plans
             </h1>
             <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-              Prioritized competency gaps derived from your diagnostic assessment. Each gap links directly to recommended iGOT courses, interactive Virtual Labs, and peer discussions.
+              Prioritized competency gaps derived from your {departmentConfig?.name} diagnostic assessment. Each gap links directly to recommended courses, interactive simulation labs, and peer discussions.
             </p>
           </div>
 
           <div className="flex items-center gap-3 bg-white/10 border border-white/20 p-4 rounded-gov-md backdrop-blur-xs text-center shrink-0">
             <div>
               <span className="text-[10px] text-white/60 uppercase font-bold block">Critical</span>
-              <span className="text-2xl font-black text-red-300">1</span>
+              <span className="text-2xl font-black text-red-300">{criticalCount}</span>
             </div>
             <div className="h-8 w-px bg-white/20" />
             <div>
               <span className="text-[10px] text-white/60 uppercase font-bold block">High</span>
-              <span className="text-2xl font-black text-amber-300">1</span>
+              <span className="text-2xl font-black text-amber-300">{highCount}</span>
             </div>
             <div className="h-8 w-px bg-white/20" />
             <div>
               <span className="text-[10px] text-white/60 uppercase font-bold block">Medium</span>
-              <span className="text-2xl font-black text-blue-200">1</span>
+              <span className="text-2xl font-black text-blue-200">{mediumCount}</span>
             </div>
           </div>
         </div>

@@ -15,25 +15,17 @@ import {
 import { useStream } from '../context/StreamContext';
 
 export default function NextBestActionCard() {
-  const { gapAnalysis, selectedStream, currentRole } = useStream();
+  const { domainNextBestAction, employee, departmentConfig, gapAnalysis, currentRole } = useStream();
   const [whyThisModalOpen, setWhyThisModalOpen] = useState(false);
 
-  // Derive top critical gap or default to Survey Sampling
-  const topCriticalGap = gapAnalysis?.criticalGaps?.[0] || {
-    name: 'Survey Sampling',
-    current: 42,
-    required: 75,
-    gap: 33,
-  };
-
-  const actionTitle = `Strengthen ${topCriticalGap.name}`;
-  const currentVal = topCriticalGap.current || 42;
-  const requiredVal = topCriticalGap.required || 75;
-  const gapVal = topCriticalGap.gap || (requiredVal - currentVal);
-
-  const recommendedCourseTitle = topCriticalGap.name.includes('Survey')
-    ? 'Fundamentals of Survey Sampling'
-    : `Mastering ${topCriticalGap.name} for Civil Services`;
+  const topCriticalGap = gapAnalysis?.criticalGaps?.[0] || { name: domainNextBestAction?.competencyName || 'Core Competency' };
+  const actionTitle = domainNextBestAction?.actionTitle || 'Strengthen Core Competency';
+  const currentVal = domainNextBestAction?.currentLevel || 45;
+  const requiredVal = domainNextBestAction?.requiredLevel || 75;
+  const gapVal = domainNextBestAction?.gapPoints || (requiredVal - currentVal);
+  const recommendedCourseTitle = domainNextBestAction?.recommendedCourseTitle || 'Civil Service Competency Course';
+  const provider = domainNextBestAction?.provider || 'iGOT Karmayogi';
+  const roleName = currentRole?.role || employee?.designation || 'Civil Service Officer';
 
   return (
     <>
@@ -82,7 +74,7 @@ export default function NextBestActionCard() {
               <span className="font-semibold text-gov-navy">Recommended Learning:</span>
               <span className="text-gov-blue font-medium underline">"{recommendedCourseTitle}"</span>
               <span className="text-gov-gray-400">·</span>
-              <span className="badge-gov-info text-[10px]">Provider: iGOT / TPAC</span>
+              <span className="badge-gov-info text-[10px]">Provider: {provider}</span>
             </div>
           </div>
 
@@ -136,7 +128,7 @@ export default function NextBestActionCard() {
                 <div className="bg-gov-blue-light/50 border border-blue-200 p-3 rounded-gov space-y-1">
                   <p className="font-bold text-gov-navy">Competency Gap Identified: {topCriticalGap.name}</p>
                   <p className="text-gov-gray-700 leading-relaxed">
-                    During your Diagnostic Assessment, questions testing practical stratified weight allocation and non-sampling error handling scored lower than the {requiredVal}% threshold benchmarked for <strong>{currentRole.role}</strong>.
+                    During your Diagnostic Assessment, questions testing practical stratified weight allocation and non-sampling error handling scored lower than the {requiredVal}% threshold benchmarked for <strong>{roleName}</strong>.
                   </p>
                 </div>
 
